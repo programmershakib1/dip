@@ -85,32 +85,37 @@ async function run() {
     // posts
     // news feed
     app.get("/news-feeds", async (req, res) => {
-      const result = await approvedPostsCollection
+      const posts = await approvedPostsCollection
         .find()
         .sort({ _id: -1 })
         .toArray();
-      res.send(result);
+
+      const postsWithUserData = await Promise.all(
+        posts.map(async (post) => {
+          const user_data = await usersCollection.findOne({
+            _id: new ObjectId(post.user_id),
+          });
+
+          return {
+            ...post,
+            user_data: user_data,
+          };
+        })
+      );
+
+      res.send(postsWithUserData);
     });
 
-    // my posts
-    app.get("/my-posts/:email", verifyToken, async (req, res) => {
+    // my data
+    app.get("/my-data/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
-      const result = await allPostsCollection
-        .find({ user_email: email })
+      const user_data = await usersCollection.findOne({ email });
+      const user_id = user_data._id;
+      const posts = await allPostsCollection
+        .find({ user_id: user_id.toString() })
         .sort({ _id: -1 })
         .toArray();
-      res.send(result);
-    });
-
-    // pending posts
-    app.get("/pending-posts", async (req, res) => {
-      const query = {
-        approved_status: false,
-        post_status: { $exists: false },
-      };
-
-      const result = await allPostsCollection.find(query).toArray();
-      res.send(result);
+      res.send({ user_data, posts });
     });
 
     // create post
@@ -119,6 +124,31 @@ async function run() {
 
       const result = await allPostsCollection.insertOne(newPost);
       res.send(result);
+    });
+
+    // get pending posts
+    app.get("/pending-posts", verifyToken, async (req, res) => {
+      const query = {
+        approved_status: false,
+        post_status: { $exists: false },
+      };
+
+      const posts = await allPostsCollection.find(query).toArray();
+
+      const postsWithUserData = await Promise.all(
+        posts.map(async (post) => {
+          const user_data = await usersCollection.findOne({
+            _id: new ObjectId(post.user_id),
+          });
+
+          return {
+            ...post,
+            user_data: user_data,
+          };
+        })
+      );
+
+      res.send(postsWithUserData);
     });
 
     // approve post
@@ -133,7 +163,7 @@ async function run() {
         return res.status(404).send({ message: "Post not found" });
       }
 
-      const updatedPost = await allPostsCollection.updateOne(
+      await allPostsCollection.updateOne(
         { _id: new ObjectId(id) },
         { $set: { approved_status: true } }
       );
@@ -184,13 +214,15 @@ async function run() {
             $push: { liked_by: user_email },
           };
 
-      const [approvedUpdate, allUpdate] = await Promise.all([
-        approvedPostsCollection.updateOne(
-          { _id: new ObjectId(id) },
-          updateQuery
-        ),
-        allPostsCollection.updateOne({ _id: new ObjectId(id) }, updateQuery),
-      ]);
+      const approvedUpdate = approvedPostsCollection.updateOne(
+        { _id: new ObjectId(id) },
+        updateQuery
+      );
+
+      const allUpdate = await allPostsCollection.updateOne(
+        { _id: new ObjectId(id) },
+        updateQuery
+      );
 
       res.send({ approvedUpdate, allUpdate });
     });
@@ -198,13 +230,11 @@ async function run() {
     // add comment
     app.post("/add-comment/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
-      const { user_name, user_email, user_image, comment } = req.body;
+      const { user_id, comment } = req.body;
 
       const newComment = {
         _id: new ObjectId(),
-        user_name,
-        user_email,
-        user_image,
+        user_id,
         comment,
         commented_at: new Date().toISOString(),
       };
@@ -224,19 +254,19 @@ async function run() {
 
     // delete comment
     app.delete(
-      "/delete-comment/:postId/:commentId",
+      "/delete-comment/:post_id/:comment_id",
       verifyToken,
       async (req, res) => {
-        const { postId, commentId } = req.params;
+        const { post_id, comment_id } = req.params;
 
         const approvedResult = await approvedPostsCollection.updateOne(
-          { _id: new ObjectId(postId) },
-          { $pull: { comments: { _id: new ObjectId(commentId) } } }
+          { _id: new ObjectId(post_id) },
+          { $pull: { comments: { _id: new ObjectId(comment_id) } } }
         );
 
         const allPostsResult = await allPostsCollection.updateOne(
-          { _id: new ObjectId(postId) },
-          { $pull: { comments: { _id: new ObjectId(commentId) } } }
+          { _id: new ObjectId(post_id) },
+          { $pull: { comments: { _id: new ObjectId(comment_id) } } }
         );
         res.send({ approvedResult, allPostsResult });
       }
@@ -248,14 +278,263 @@ async function run() {
       const result = await allPostsCollection.deleteOne({
         _id: new ObjectId(id),
       });
-      await pendingPostsCollection.deleteOne({
-        _id: new ObjectId(id),
-      });
       res.send(result);
     });
 
+    // send friend request
+    app.put("/send-friend-request/:target_id", async (req, res) => {
+      const target_id = req.params.target_id;
+      const current_id = req.body.current_id;
+
+      if (!ObjectId.isValid(target_id) || !ObjectId.isValid(current_id)) {
+        return res
+          .status(400)
+          .send({ success: false, error: "Invalid user ID" });
+      }
+
+      try {
+        const targetUser = await usersCollection.findOne({
+          _id: new ObjectId(target_id),
+        });
+        if (!targetUser) {
+          return res
+            .status(404)
+            .send({ success: false, error: "Target user not found" });
+        }
+        if (
+          targetUser.friends?.includes(current_id) ||
+          targetUser.pendingRequests?.includes(current_id)
+        ) {
+          return res
+            .status(400)
+            .send({ success: false, error: "Already friends or request sent" });
+        }
+
+        const updateTarget = await usersCollection.updateOne(
+          { _id: new ObjectId(target_id) },
+          { $addToSet: { pendingRequests: current_id } }
+        );
+
+        const updateSender = await usersCollection.updateOne(
+          { _id: new ObjectId(current_id) },
+          { $addToSet: { sentRequests: target_id } }
+        );
+
+        if (updateTarget.modifiedCount > 0 && updateSender.modifiedCount > 0) {
+          res.send({
+            success: true,
+            message: "Friend request sent successfully",
+          });
+        } else {
+          res
+            .status(500)
+            .send({ success: false, error: "Failed to send friend request" });
+        }
+      } catch (error) {
+        res.status(500).send({ success: false, error: error.message });
+      }
+    });
+
+    // accept friend request
+    app.put("/accept-friend-request/:target_id", async (req, res) => {
+      const target_id = req.params.target_id;
+      const current_id = req.body.current_id;
+
+      if (!ObjectId.isValid(target_id) || !ObjectId.isValid(current_id)) {
+        return res
+          .status(400)
+          .send({ success: false, error: "Invalid user ID" });
+      }
+
+      try {
+        const current = await usersCollection.findOne({
+          _id: new ObjectId(current_id),
+        });
+        if (!current) {
+          return res
+            .status(404)
+            .send({ success: false, error: "Receiver not found" });
+        }
+        if (!current.pendingRequests?.includes(target_id)) {
+          return res.status(400).send({
+            success: false,
+            error: "No pending request from this user",
+          });
+        }
+
+        const target = await usersCollection.findOne({
+          _id: new ObjectId(target_id),
+        });
+
+        if (!target) {
+          return res
+            .status(404)
+            .send({ success: false, error: "Sender not found" });
+        }
+
+        await usersCollection.updateOne(
+          { _id: new ObjectId(current_id) },
+          {
+            $addToSet: { friends: target_id },
+            $pull: { pendingRequests: target_id },
+          }
+        );
+
+        await usersCollection.updateOne(
+          { _id: new ObjectId(target_id) },
+          {
+            $addToSet: { friends: current_id },
+            $pull: { sentRequests: current_id },
+          }
+        );
+
+        res.send({ success: true });
+      } catch (error) {
+        res.status(500).send({ success: false, error: error.message });
+      }
+    });
+
+    // cancel friend request
+    app.put("/cancel-friend-request/:target_id", async (req, res) => {
+      const target_id = req.params.target_id;
+      const current_id = req.body.current_id;
+
+      if (!ObjectId.isValid(target_id) || !ObjectId.isValid(current_id)) {
+        return res
+          .status(400)
+          .send({ success: false, error: "Invalid user ID" });
+      }
+
+      try {
+        const sender = await usersCollection.findOne({
+          _id: new ObjectId(current_id),
+        });
+        if (!sender || !sender.sentRequests?.includes(target_id)) {
+          return res
+            .status(400)
+            .send({ success: false, error: "No sent request to this user" });
+        }
+
+        const updateSender = await usersCollection.updateOne(
+          { _id: new ObjectId(current_id) },
+          { $pull: { sentRequests: target_id } }
+        );
+
+        const updateReceiver = await usersCollection.updateOne(
+          { _id: new ObjectId(target_id) },
+          { $pull: { pendingRequests: current_id } }
+        );
+
+        if (
+          updateSender.modifiedCount > 0 &&
+          updateReceiver.modifiedCount > 0
+        ) {
+          res.send({
+            success: true,
+            message: "Friend request cancelled successfully",
+          });
+        } else {
+          res
+            .status(500)
+            .send({ success: false, error: "Failed to cancel friend request" });
+        }
+      } catch (error) {
+        res.status(500).send({ success: false, error: error.message });
+      }
+    });
+
+    // reject friend request
+    app.put("/reject-friend-request/:target_id", async (req, res) => {
+      const target_id = req.params.target_id;
+      const current_id = req.body.current_id;
+
+      if (!ObjectId.isValid(target_id) || !ObjectId.isValid(current_id)) {
+        return res
+          .status(400)
+          .send({ success: false, error: "Invalid user ID" });
+      }
+
+      try {
+        const receiver = await usersCollection.findOne({
+          _id: new ObjectId(current_id),
+        });
+        if (!receiver || !receiver.pendingRequests?.includes(target_id)) {
+          return res.status(400).send({
+            success: false,
+            error: "No pending request from this user",
+          });
+        }
+
+        const updateReceiver = await usersCollection.updateOne(
+          { _id: new ObjectId(current_id) },
+          { $pull: { pendingRequests: target_id } }
+        );
+
+        if (updateReceiver.modifiedCount > 0) {
+          res.send({
+            success: true,
+            message: "Friend request rejected successfully",
+          });
+        } else {
+          res
+            .status(500)
+            .send({ success: false, error: "Failed to reject friend request" });
+        }
+      } catch (error) {
+        res.status(500).send({ success: false, error: error.message });
+      }
+    });
+
+    // follow
+    app.put("/follow/:target_id", async (req, res) => {
+      const target_id = req.params.target_id;
+      const current_id = req.body.current_id;
+
+      try {
+        const updateFollowing = await usersCollection.updateOne(
+          { _id: new ObjectId(current_id) },
+          { $addToSet: { following: target_id } }
+        );
+
+        const updateFollowers = await usersCollection.updateOne(
+          { _id: new ObjectId(target_id) },
+          { $addToSet: { followers: current_id } }
+        );
+
+        res.send({ success: true });
+      } catch (error) {
+        res.status(500).send({ success: false, error: error.message });
+      }
+    });
+
+    // unfollow
+    app.put("/unfollow/:target_id", async (req, res) => {
+      const target_id = req.params.target_id;
+      const current_id = req.body.current_id;
+
+      try {
+        const updateFollowing = await usersCollection.updateOne(
+          { _id: new ObjectId(current_id) },
+          { $pull: { following: target_id } }
+        );
+
+        const updateFollowers = await usersCollection.updateOne(
+          { _id: new ObjectId(target_id) },
+          { $pull: { followers: current_id } }
+        );
+
+        res.send({
+          success: true,
+          following: updateFollowing,
+          followers: updateFollowers,
+        });
+      } catch (error) {
+        res.status(500).send({ success: false, error: error.message });
+      }
+    });
+
     // user
-    // get user
+    // get user in email
     app.get("/user/:email", async (req, res) => {
       const email = req.params.email;
       const result = await usersCollection.findOne({ email });
@@ -265,45 +544,91 @@ async function run() {
       res.send(result);
     });
 
+    // get user in username
+    app.get("/username/:username", async (req, res) => {
+      const username = req.params.username;
+      const result = await usersCollection.findOne({ username });
+      if (!result) {
+        return res.status(200).send(null);
+      }
+      res.send(result);
+    });
+
+    // get user in user id
+    app.get("/user_id/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await usersCollection.findOne({ _id: new ObjectId(id) });
+      if (!result) {
+        return res.status(200).send(null);
+      }
+      res.send(result);
+    });
+
+    // get user in many user id
+    app.post("/users-by-ids", async (req, res) => {
+      const { userIds } = req.body;
+      try {
+        const users = await usersCollection
+          .find({ _id: { $in: userIds.map((id) => new ObjectId(id)) } })
+          .toArray();
+        res.send(users);
+      } catch (error) {
+        res.status(500).send({ error: error.message });
+      }
+    });
+
     // add user
     app.post("/user", async (req, res) => {
       const userInfo = req.body;
-
       const result = await usersCollection.insertOne(userInfo);
       res.send(result);
     });
 
-    // update lastSignInTime
-    app.put("/user/:email", async (req, res) => {
-      const email = req.params.email;
-      const updatedUser = {
-        $set: {
-          lastSignInTime: req.body.lastSignInTime,
-        },
-      };
-
-      const result = await usersCollection.updateOne({ email }, updatedUser);
-      res.send(result);
-    });
-
     // check username
-    app.get("/username/:username", async (req, res) => {
+    app.get("/user_name/:username", async (req, res) => {
       const username = req.params.username;
-      const result = await usersCollection.find({ username }).toArray();
-      res.send(result);
+      const user = await usersCollection.findOne({ username });
+      if (user) {
+        res.json({ available: false });
+      } else {
+        res.json({ available: true });
+      }
     });
+
+    // get user username
+    // app.get("/username/:username", async (req, res) => {
+    //   const username = req.params.username;
+    //   const result = await usersCollection.findOne({ username });
+    //   if (!result) {
+    //     return res.status(200).send(null);
+    //   }
+    //   res.send(result);
+    // });
+
+    // update lastSignInTime
+    // app.put("/user/:email", async (req, res) => {
+    //   const email = req.params.email;
+    //   const updatedUser = {
+    //     $set: {
+    //       lastSignInTime: req.body.lastSignInTime,
+    //     },
+    //   };
+
+    //   const result = await usersCollection.updateOne({ email }, updatedUser);
+    //   res.send(result);
+    // });
 
     // update username
-    app.patch("/username/:email", async (req, res) => {
-      const email = req.params.email;
-      const username = req.body.username;
+    // app.patch("/username/:email", async (req, res) => {
+    //   const email = req.params.email;
+    //   const username = req.body.username;
 
-      const result = await usersCollection.updateOne(
-        { email },
-        { $set: { username } }
-      );
-      res.send(result);
-    });
+    //   const result = await usersCollection.updateOne(
+    //     { email },
+    //     { $set: { username } }
+    //   );
+    //   res.send(result);
+    // });
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();

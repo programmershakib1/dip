@@ -3,10 +3,11 @@ import SignIn from "./../pages/authentication/SignIn";
 import SignUp from "./../pages/authentication/SignUp";
 import MainLayout from "./../layouts/MainLayout";
 import PendingPosts from "../pages/PendingPosts";
+import ProfilePage from "../pages/ProfilePage";
 import ErrorPage from "./../pages/ErrorPage";
 import PrivateRoute from "./PrivateRoute";
-import Profile from "../pages/Profile";
 import NewsFeed from "../pages/NewsFeed";
+import Profile from "../pages/Profile";
 
 const router = createBrowserRouter([
   {
@@ -31,6 +32,14 @@ const router = createBrowserRouter([
         element: (
           <PrivateRoute>
             <Profile></Profile>
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "/:username",
+        element: (
+          <PrivateRoute>
+            <ProfilePage></ProfilePage>
           </PrivateRoute>
         ),
       },

@@ -15,8 +15,7 @@ import {
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [emailValue, setEmailValue] = useState("");
-  const [locations, setLocations] = useState("");
+  const [locationPath, setLocationPath] = useState("");
   const googleProvider = new GoogleAuthProvider();
 
   const handleSignUp = (email, password) => {
@@ -43,19 +42,6 @@ const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser?.email) {
         const user = { email: currentUser.email };
-
-        const { data } = await axios.get(
-          `${import.meta.env.VITE_SERVER_URL}/user/${currentUser.email}`
-        );
-
-        if (data) {
-          await axios.put(
-            `${import.meta.env.VITE_SERVER_URL}/user/${currentUser.email}`,
-            {
-              lastSignInTime: new Date().toISOString(),
-            }
-          );
-        }
 
         axios
           .post(`${import.meta.env.VITE_SERVER_URL}/jwt`, user, {
@@ -91,10 +77,8 @@ const AuthProvider = ({ children }) => {
     user,
     setUser,
     loading,
-    emailValue,
-    setEmailValue,
-    locations,
-    setLocations,
+    locationPath,
+    setLocationPath,
   };
 
   return (
