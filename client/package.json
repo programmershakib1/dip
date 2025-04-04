@@ -16,6 +16,7 @@
     "firebase": "^11.4.0",
     "i": "^0.3.7",
     "localforage": "^1.10.0",
+    "lodash": "^4.17.21",
     "lottie-react": "^2.4.1",
     "match-sorter": "^8.0.0",
     "npm": "^10.9.2",

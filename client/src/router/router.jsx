@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import SignIn from "./../pages/authentication/SignIn";
 import SignUp from "./../pages/authentication/SignUp";
+import FriendRequests from "../pages/FriendRequests";
 import MainLayout from "./../layouts/MainLayout";
 import PendingPosts from "../pages/PendingPosts";
 import ProfilePage from "../pages/ProfilePage";
@@ -18,6 +19,14 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <NewsFeed></NewsFeed>,
+      },
+      {
+        path: "/friends",
+        element: (
+          <PrivateRoute>
+            <FriendRequests></FriendRequests>
+          </PrivateRoute>
+        ),
       },
       {
         path: "/pending-posts",

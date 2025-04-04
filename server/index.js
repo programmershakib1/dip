@@ -83,7 +83,7 @@ async function run() {
     });
 
     // posts
-    // news feed
+    // news feeds
     app.get("/news-feeds", async (req, res) => {
       const posts = await approvedPostsCollection
         .find()
@@ -92,13 +92,13 @@ async function run() {
 
       const postsWithUserData = await Promise.all(
         posts.map(async (post) => {
-          const user_data = await usersCollection.findOne({
+          const userData = await usersCollection.findOne({
             _id: new ObjectId(post.user_id),
           });
 
           return {
             ...post,
-            user_data: user_data,
+            userData: userData,
           };
         })
       );
@@ -109,13 +109,13 @@ async function run() {
     // my data
     app.get("/my-data/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
-      const user_data = await usersCollection.findOne({ email });
-      const user_id = user_data._id;
+      const userData = await usersCollection.findOne({ email });
+      const userId = userData._id;
       const posts = await allPostsCollection
-        .find({ user_id: user_id.toString() })
+        .find({ user_id: userId.toString() })
         .sort({ _id: -1 })
         .toArray();
-      res.send({ user_data, posts });
+      res.send({ userData, posts });
     });
 
     // create post
@@ -129,21 +129,21 @@ async function run() {
     // get pending posts
     app.get("/pending-posts", verifyToken, async (req, res) => {
       const query = {
-        approved_status: false,
-        post_status: { $exists: false },
+        approvedStatus: false,
+        postStatus: { $exists: false },
       };
 
       const posts = await allPostsCollection.find(query).toArray();
 
       const postsWithUserData = await Promise.all(
         posts.map(async (post) => {
-          const user_data = await usersCollection.findOne({
+          const userData = await usersCollection.findOne({
             _id: new ObjectId(post.user_id),
           });
 
           return {
             ...post,
-            user_data: user_data,
+            userData: userData,
           };
         })
       );
@@ -165,12 +165,12 @@ async function run() {
 
       await allPostsCollection.updateOne(
         { _id: new ObjectId(id) },
-        { $set: { approved_status: true } }
+        { $set: { approvedStatus: true } }
       );
 
       const result = await approvedPostsCollection.insertOne({
         ...post,
-        approved_status: true,
+        approvedStatus: true,
       });
       res.send(result);
     });
@@ -183,7 +183,7 @@ async function run() {
         { _id: new ObjectId(id) },
         {
           $set: {
-            post_status:
+            postStatus:
               "Your post could not be approved. Your post falls outside our guidelines. You can update the post if you wish. We will review your post again if you update it.",
           },
         }
@@ -194,7 +194,7 @@ async function run() {
     // like post
     app.post("/like-post/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
-      const user_email = req.body.user_email;
+      const userEmail = req.body.user_email;
 
       const post = await allPostsCollection.findOne({
         _id: new ObjectId(id),
@@ -204,14 +204,14 @@ async function run() {
         return res.status(404).send({ message: "Post not found" });
       }
 
-      const alreadyLiked = post.liked_by.includes(user_email);
+      const alreadyLiked = post.liked_by.includes(userEmail);
 
       const updateQuery = alreadyLiked
         ? {
-            $pull: { liked_by: user_email },
+            $pull: { liked_by: userEmail },
           }
         : {
-            $push: { liked_by: user_email },
+            $push: { liked_by: userEmail },
           };
 
       const approvedUpdate = approvedPostsCollection.updateOne(
@@ -236,7 +236,7 @@ async function run() {
         _id: new ObjectId(),
         user_id,
         comment,
-        commented_at: new Date().toISOString(),
+        commentedAt: new Date().toISOString(),
       };
 
       const approvedResult = await approvedPostsCollection.updateOne(
@@ -254,19 +254,19 @@ async function run() {
 
     // delete comment
     app.delete(
-      "/delete-comment/:post_id/:comment_id",
+      "/delete-comment/:postId/:commentId",
       verifyToken,
       async (req, res) => {
-        const { post_id, comment_id } = req.params;
+        const { postId, commentId } = req.params;
 
         const approvedResult = await approvedPostsCollection.updateOne(
-          { _id: new ObjectId(post_id) },
-          { $pull: { comments: { _id: new ObjectId(comment_id) } } }
+          { _id: new ObjectId(postId) },
+          { $pull: { comments: { _id: new ObjectId(commentId) } } }
         );
 
         const allPostsResult = await allPostsCollection.updateOne(
-          { _id: new ObjectId(post_id) },
-          { $pull: { comments: { _id: new ObjectId(comment_id) } } }
+          { _id: new ObjectId(postId) },
+          { $pull: { comments: { _id: new ObjectId(commentId) } } }
         );
         res.send({ approvedResult, allPostsResult });
       }
@@ -282,11 +282,11 @@ async function run() {
     });
 
     // send friend request
-    app.put("/send-friend-request/:target_id", async (req, res) => {
-      const target_id = req.params.target_id;
-      const current_id = req.body.current_id;
+    app.put("/send-friend-request/:targetId", async (req, res) => {
+      const targetId = req.params.targetId;
+      const currentId = req.body.currentId;
 
-      if (!ObjectId.isValid(target_id) || !ObjectId.isValid(current_id)) {
+      if (!ObjectId.isValid(targetId) || !ObjectId.isValid(currentId)) {
         return res
           .status(400)
           .send({ success: false, error: "Invalid user ID" });
@@ -294,7 +294,7 @@ async function run() {
 
       try {
         const targetUser = await usersCollection.findOne({
-          _id: new ObjectId(target_id),
+          _id: new ObjectId(targetId),
         });
         if (!targetUser) {
           return res
@@ -302,8 +302,8 @@ async function run() {
             .send({ success: false, error: "Target user not found" });
         }
         if (
-          targetUser.friends?.includes(current_id) ||
-          targetUser.pendingRequests?.includes(current_id)
+          targetUser.friends?.includes(currentId) ||
+          targetUser.pendingRequests?.includes(currentId)
         ) {
           return res
             .status(400)
@@ -311,13 +311,13 @@ async function run() {
         }
 
         const updateTarget = await usersCollection.updateOne(
-          { _id: new ObjectId(target_id) },
-          { $addToSet: { pendingRequests: current_id } }
+          { _id: new ObjectId(targetId) },
+          { $addToSet: { pendingRequests: currentId } }
         );
 
         const updateSender = await usersCollection.updateOne(
-          { _id: new ObjectId(current_id) },
-          { $addToSet: { sentRequests: target_id } }
+          { _id: new ObjectId(currentId) },
+          { $addToSet: { sentRequests: targetId } }
         );
 
         if (updateTarget.modifiedCount > 0 && updateSender.modifiedCount > 0) {
@@ -335,71 +335,12 @@ async function run() {
       }
     });
 
-    // accept friend request
-    app.put("/accept-friend-request/:target_id", async (req, res) => {
-      const target_id = req.params.target_id;
-      const current_id = req.body.current_id;
-
-      if (!ObjectId.isValid(target_id) || !ObjectId.isValid(current_id)) {
-        return res
-          .status(400)
-          .send({ success: false, error: "Invalid user ID" });
-      }
-
-      try {
-        const current = await usersCollection.findOne({
-          _id: new ObjectId(current_id),
-        });
-        if (!current) {
-          return res
-            .status(404)
-            .send({ success: false, error: "Receiver not found" });
-        }
-        if (!current.pendingRequests?.includes(target_id)) {
-          return res.status(400).send({
-            success: false,
-            error: "No pending request from this user",
-          });
-        }
-
-        const target = await usersCollection.findOne({
-          _id: new ObjectId(target_id),
-        });
-
-        if (!target) {
-          return res
-            .status(404)
-            .send({ success: false, error: "Sender not found" });
-        }
-
-        await usersCollection.updateOne(
-          { _id: new ObjectId(current_id) },
-          {
-            $addToSet: { friends: target_id },
-            $pull: { pendingRequests: target_id },
-          }
-        );
-
-        await usersCollection.updateOne(
-          { _id: new ObjectId(target_id) },
-          {
-            $addToSet: { friends: current_id },
-            $pull: { sentRequests: current_id },
-          }
-        );
-
-        res.send({ success: true });
-      } catch (error) {
-        res.status(500).send({ success: false, error: error.message });
-      }
-    });
-
     // cancel friend request
-    app.put("/cancel-friend-request/:target_id", async (req, res) => {
-      const target_id = req.params.target_id;
-      const current_id = req.body.current_id;
+    app.put("/cancel-friend-request/:targetId", async (req, res) => {
+      const targetId = req.params.targetId;
+      const currentId = req.body.currentId;
 
-      if (!ObjectId.isValid(target_id) || !ObjectId.isValid(current_id)) {
+      if (!ObjectId.isValid(targetId) || !ObjectId.isValid(currentId)) {
         return res
           .status(400)
           .send({ success: false, error: "Invalid user ID" });
@@ -407,22 +348,22 @@ async function run() {
 
       try {
         const sender = await usersCollection.findOne({
-          _id: new ObjectId(current_id),
+          _id: new ObjectId(currentId),
         });
-        if (!sender || !sender.sentRequests?.includes(target_id)) {
+        if (!sender || !sender.sentRequests?.includes(targetId)) {
           return res
             .status(400)
             .send({ success: false, error: "No sent request to this user" });
         }
 
         const updateSender = await usersCollection.updateOne(
-          { _id: new ObjectId(current_id) },
-          { $pull: { sentRequests: target_id } }
+          { _id: new ObjectId(currentId) },
+          { $pull: { sentRequests: targetId } }
         );
 
         const updateReceiver = await usersCollection.updateOne(
-          { _id: new ObjectId(target_id) },
-          { $pull: { pendingRequests: current_id } }
+          { _id: new ObjectId(targetId) },
+          { $pull: { pendingRequests: currentId } }
         );
 
         if (
@@ -443,12 +384,71 @@ async function run() {
       }
     });
 
-    // reject friend request
-    app.put("/reject-friend-request/:target_id", async (req, res) => {
-      const target_id = req.params.target_id;
-      const current_id = req.body.current_id;
+    // accept friend request
+    app.put("/accept-friend-request/:targetId", async (req, res) => {
+      const targetId = req.params.targetId;
+      const currentId = req.body.currentId;
 
-      if (!ObjectId.isValid(target_id) || !ObjectId.isValid(current_id)) {
+      if (!ObjectId.isValid(targetId) || !ObjectId.isValid(currentId)) {
+        return res
+          .status(400)
+          .send({ success: false, error: "Invalid user ID" });
+      }
+
+      try {
+        const current = await usersCollection.findOne({
+          _id: new ObjectId(currentId),
+        });
+        if (!current) {
+          return res
+            .status(404)
+            .send({ success: false, error: "Receiver not found" });
+        }
+        if (!current.pendingRequests?.includes(targetId)) {
+          return res.status(400).send({
+            success: false,
+            error: "No pending request from this user",
+          });
+        }
+
+        const target = await usersCollection.findOne({
+          _id: new ObjectId(targetId),
+        });
+
+        if (!target) {
+          return res
+            .status(404)
+            .send({ success: false, error: "Sender not found" });
+        }
+
+        await usersCollection.updateOne(
+          { _id: new ObjectId(currentId) },
+          {
+            $addToSet: { friends: targetId },
+            $pull: { pendingRequests: targetId },
+          }
+        );
+
+        await usersCollection.updateOne(
+          { _id: new ObjectId(targetId) },
+          {
+            $addToSet: { friends: currentId },
+            $pull: { sentRequests: currentId },
+          }
+        );
+
+        res.send({ success: true });
+      } catch (error) {
+        res.status(500).send({ success: false, error: error.message });
+      }
+    });
+
+    // reject friend request
+    app.put("/reject-friend-request/:targetId", async (req, res) => {
+      const targetId = req.params.targetId;
+      const currentId = req.body.currentId;
+
+      if (!ObjectId.isValid(targetId) || !ObjectId.isValid(currentId)) {
         return res
           .status(400)
           .send({ success: false, error: "Invalid user ID" });
@@ -456,9 +456,9 @@ async function run() {
 
       try {
         const receiver = await usersCollection.findOne({
-          _id: new ObjectId(current_id),
+          _id: new ObjectId(currentId),
         });
-        if (!receiver || !receiver.pendingRequests?.includes(target_id)) {
+        if (!receiver || !receiver.pendingRequests?.includes(targetId)) {
           return res.status(400).send({
             success: false,
             error: "No pending request from this user",
@@ -466,8 +466,8 @@ async function run() {
         }
 
         const updateReceiver = await usersCollection.updateOne(
-          { _id: new ObjectId(current_id) },
-          { $pull: { pendingRequests: target_id } }
+          { _id: new ObjectId(currentId) },
+          { $pull: { pendingRequests: targetId } }
         );
 
         if (updateReceiver.modifiedCount > 0) {
@@ -486,19 +486,19 @@ async function run() {
     });
 
     // follow
-    app.put("/follow/:target_id", async (req, res) => {
-      const target_id = req.params.target_id;
-      const current_id = req.body.current_id;
+    app.put("/follow/:targetId", async (req, res) => {
+      const targetId = req.params.targetId;
+      const currentId = req.body.currentId;
 
       try {
         const updateFollowing = await usersCollection.updateOne(
-          { _id: new ObjectId(current_id) },
-          { $addToSet: { following: target_id } }
+          { _id: new ObjectId(currentId) },
+          { $addToSet: { following: targetId } }
         );
 
         const updateFollowers = await usersCollection.updateOne(
-          { _id: new ObjectId(target_id) },
-          { $addToSet: { followers: current_id } }
+          { _id: new ObjectId(targetId) },
+          { $addToSet: { followers: currentId } }
         );
 
         res.send({ success: true });
@@ -508,19 +508,19 @@ async function run() {
     });
 
     // unfollow
-    app.put("/unfollow/:target_id", async (req, res) => {
-      const target_id = req.params.target_id;
-      const current_id = req.body.current_id;
+    app.put("/unfollow/:targetId", async (req, res) => {
+      const targetId = req.params.targetId;
+      const currentId = req.body.currentId;
 
       try {
         const updateFollowing = await usersCollection.updateOne(
-          { _id: new ObjectId(current_id) },
-          { $pull: { following: target_id } }
+          { _id: new ObjectId(currentId) },
+          { $pull: { following: targetId } }
         );
 
         const updateFollowers = await usersCollection.updateOne(
-          { _id: new ObjectId(target_id) },
-          { $pull: { followers: current_id } }
+          { _id: new ObjectId(targetId) },
+          { $pull: { followers: currentId } }
         );
 
         res.send({

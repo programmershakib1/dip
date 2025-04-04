@@ -1,7 +1,7 @@
 import { getTimeAgo } from "../utils/utils";
 
 const CommentList = ({ comment, post_id, handleDeleteComment, userData }) => {
-  const { _id, comment: comment_text, commented_at } = comment;
+  const { _id, comment: comment_text, commentedAt } = comment;
 
   if (!userData) {
     return (
@@ -16,7 +16,7 @@ const CommentList = ({ comment, post_id, handleDeleteComment, userData }) => {
   }
 
   return (
-    <div id={`comment-${_id}`} className="flex gap-2 mt-3">
+    <div id={`comment-${_id}`} className="flex gap-2 mb-2.5">
       <img
         src={userData.image}
         alt="user"
@@ -30,7 +30,7 @@ const CommentList = ({ comment, post_id, handleDeleteComment, userData }) => {
           </button>
         </div>
         <p className="text-gray-600 text-sm">{comment_text}</p>
-        <p className="text-xs text-gray-400">{getTimeAgo(commented_at)}</p>
+        <p className="text-xs text-gray-400">{getTimeAgo(commentedAt)}</p>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import useAxiosSecure from "../hooks/useAxiosSecure";
 import { useQuery } from "@tanstack/react-query";
 import { getTimeAgo } from "../utils/utils";
 import Swal from "sweetalert2";
+import { Link } from "react-router-dom";
 
 const PendingPosts = () => {
   const axiosSecure = useAxiosSecure();
@@ -65,15 +66,19 @@ const PendingPosts = () => {
         {posts.map((post, idx) => (
           <div key={idx} className="p-5 border border-black rounded-xl mb-5">
             <div className="flex items-center">
-              <img
-                src={post?.user_data?.image}
-                alt="profile"
-                className="w-10 h-10 rounded-full mr-3"
-              />
+              <Link to={`/${post?.userData?.username}`}>
+                <img
+                  src={post?.userData?.image}
+                  alt="profile"
+                  className="w-10 h-10 rounded-full mr-3"
+                />
+              </Link>
               <div>
-                <h1 className="font-semibold">{post?.user_data?.name}</h1>
+                <Link to={`/${post?.userData?.username}`}>
+                  <h1 className="font-semibold">{post?.userData?.name}</h1>
+                </Link>
                 <p className="text-gray-500 text-sm">
-                  {getTimeAgo(post?.posted_at)}
+                  {getTimeAgo(post?.postedAt)}
                 </p>
               </div>
             </div>
