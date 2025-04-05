@@ -20,7 +20,7 @@ const Navbar = () => {
         <Link to="/pending-posts">
           <i className="fa-solid fa-clock text-[33px]"></i>
         </Link>
-        <Link to="/">
+        <Link to="/notifications">
           <i className="fa-solid fa-bell text-4xl"></i>
         </Link>
         <Link to="/profile">

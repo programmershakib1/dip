@@ -39,13 +39,13 @@ const ProfilePage = () => {
       <div className="relative">
         <img
           className="w-full md:h-72 lg:h-[450px] object-cover border-2 rounded-xl"
-          src={user?.banner}
+          src={user?.cover}
           alt="banner"
         />
         <div className="absolute -bottom-28 left-5 flex items-center gap-5">
           <img
             className="w-40 h-40 object-cover border-4 rounded-full"
-            src={user?.image}
+            src={user?.profile}
             alt="profile"
           />
           <div className="mt-3">

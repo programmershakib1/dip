@@ -1,15 +1,11 @@
 import ProfileHeader from "../components/ProfileHeader";
 import useAxiosSecure from "../hooks/useAxiosSecure";
+import usePostActions from "../utils/usePostActions";
 import { useQuery } from "@tanstack/react-query";
 import PostForm from "../components/PostForm";
 import PostCard from "../components/PostCard";
 import useAuth from "../hooks/useAuth";
 import Swal from "sweetalert2";
-import {
-  useCommentMutation,
-  useDeleteCommentMutation,
-  useLikeMutation,
-} from "../utils/usePostMutations";
 
 const Profile = () => {
   const { user } = useAuth();
@@ -47,15 +43,7 @@ const Profile = () => {
     enabled: !!uniqueUserIds.length && !isLoading,
   });
 
-  const likeMutation = useLikeMutation(["my-data", user?.email], user?.email);
-  const commentMutation = useCommentMutation(
-    ["my-data", user?.email],
-    userData?._id
-  );
-  const deleteCommentMutation = useDeleteCommentMutation([
-    "my-data",
-    user?.email,
-  ]);
+  const actions = usePostActions(["my-data", user?.email], userData?._id);
 
   const handleDeletePost = (id) => {
     Swal.fire({
@@ -78,15 +66,7 @@ const Profile = () => {
     });
   };
 
-  const handleLike = (postId) => likeMutation.mutate(postId);
-
-  const handleComment = (postId, commentText) => {
-    if (!commentText.trim()) return;
-    commentMutation.mutate({ postId, comment: commentText });
-  };
-
-  const handleDeleteComment = (postId, commentId) =>
-    deleteCommentMutation.mutate({ postId, commentId });
+  const handleEditSuccess = () => refetch();
 
   if (isLoading)
     return (
@@ -108,12 +88,14 @@ const Profile = () => {
               post={post}
               userData={userData}
               currentUser={user}
-              onLike={handleLike}
-              onComment={handleComment}
-              onDeleteComment={handleDeleteComment}
+              onLike={actions.handleLike}
+              onComment={actions.handleComment}
+              onDeleteComment={actions.handleDeleteComment}
               onDeletePost={handleDeletePost}
               commentUsers={commentUsers}
               usersLoading={usersLoading}
+              onEditSuccess={handleEditSuccess}
+              onEditComment={actions.handleEditComment}
             />
           ))}
         </div>

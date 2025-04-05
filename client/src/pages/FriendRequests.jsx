@@ -126,7 +126,7 @@ const FriendRequests = () => {
                 <Link to={`/${requestUser?.username}`}>
                   <img
                     className="w-16 h-16 object-cover rounded-full"
-                    src={requestUser.image}
+                    src={requestUser.profile}
                     alt={requestUser.name}
                   />
                 </Link>
@@ -153,9 +153,9 @@ const FriendRequests = () => {
             </div>
           ))
         ) : (
-          <p className="text-center text-gray-500">
+          <h2 className="text-center text-gray-500">
             No pending friend requests.
-          </p>
+          </h2>
         )}
       </div>
       <div className="col-span-2"></div>

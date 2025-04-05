@@ -121,9 +121,41 @@ async function run() {
     // create post
     app.post("/new-post", verifyToken, async (req, res) => {
       const newPost = req.body;
-
       const result = await allPostsCollection.insertOne(newPost);
       res.send(result);
+    });
+
+    // edit post
+    app.patch("/edit-post/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const { caption, image, updatedAt } = req.body;
+
+      try {
+        const updateQuery = {
+          $set: {
+            caption,
+            image,
+            updatedAt,
+          },
+          $unset: {
+            postStatus: "",
+          },
+        };
+        const result = await allPostsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          updateQuery
+        );
+
+        await approvedPostsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          updateQuery
+        );
+
+        res.send(result);
+      } catch (error) {
+        console.error("Error updating post:", error);
+        res.status(500).send({ message: "Failed to update post" });
+      }
     });
 
     // get pending posts
@@ -194,7 +226,7 @@ async function run() {
     // like post
     app.post("/like-post/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
-      const userEmail = req.body.user_email;
+      const userId = req.body.user_id;
 
       const post = await allPostsCollection.findOne({
         _id: new ObjectId(id),
@@ -204,14 +236,14 @@ async function run() {
         return res.status(404).send({ message: "Post not found" });
       }
 
-      const alreadyLiked = post.liked_by.includes(userEmail);
+      const alreadyLiked = post.liked_by.includes(userId);
 
       const updateQuery = alreadyLiked
         ? {
-            $pull: { liked_by: userEmail },
+            $pull: { liked_by: userId },
           }
         : {
-            $push: { liked_by: userEmail },
+            $push: { liked_by: userId },
           };
 
       const approvedUpdate = approvedPostsCollection.updateOne(
@@ -251,6 +283,49 @@ async function run() {
 
       res.send({ approvedResult, allPostsResult });
     });
+
+    // edit comment
+    app.patch(
+      "/edit-comment/:postId/:commentId",
+      verifyToken,
+      async (req, res) => {
+        const postId = req.params.postId;
+        const commentId = req.params.commentId;
+        const { comment } = req.body;
+
+        try {
+          const query = {
+            _id: new ObjectId(postId),
+            "comments._id": new ObjectId(commentId),
+          };
+          const update = {
+            $set: {
+              "comments.$.comment": comment,
+              "comments.$.editedAt": new Date().toISOString(),
+            },
+          };
+
+          const result = await allPostsCollection.updateOne(query, update);
+          await approvedPostsCollection.updateOne(query, update);
+
+          if (result.matchedCount === 0) {
+            return res
+              .status(404)
+              .send({ message: "Post or comment not found" });
+          }
+          if (result.modifiedCount === 0) {
+            return res
+              .status(400)
+              .send({ message: "No changes made to comment" });
+          }
+
+          res.send(result);
+        } catch (error) {
+          console.error("Error editing comment:", error);
+          res.status(500).send({ message: "Failed to edit comment" });
+        }
+      }
+    );
 
     // delete comment
     app.delete(
@@ -594,41 +669,6 @@ async function run() {
         res.json({ available: true });
       }
     });
-
-    // get user username
-    // app.get("/username/:username", async (req, res) => {
-    //   const username = req.params.username;
-    //   const result = await usersCollection.findOne({ username });
-    //   if (!result) {
-    //     return res.status(200).send(null);
-    //   }
-    //   res.send(result);
-    // });
-
-    // update lastSignInTime
-    // app.put("/user/:email", async (req, res) => {
-    //   const email = req.params.email;
-    //   const updatedUser = {
-    //     $set: {
-    //       lastSignInTime: req.body.lastSignInTime,
-    //     },
-    //   };
-
-    //   const result = await usersCollection.updateOne({ email }, updatedUser);
-    //   res.send(result);
-    // });
-
-    // update username
-    // app.patch("/username/:email", async (req, res) => {
-    //   const email = req.params.email;
-    //   const username = req.body.username;
-
-    //   const result = await usersCollection.updateOne(
-    //     { email },
-    //     { $set: { username } }
-    //   );
-    //   res.send(result);
-    // });
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();

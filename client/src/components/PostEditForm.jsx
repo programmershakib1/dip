@@ -4,13 +4,17 @@ import { useForm } from "react-hook-form";
 import { useState } from "react";
 import Swal from "sweetalert2";
 
-const PostForm = ({ userData, onPostSuccess }) => {
+const PostEditForm = ({ post, userData, onEditSuccess }) => {
   const axiosSecure = useAxiosSecure();
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [imagePreview, setImagePreview] = useState(post?.image || null);
   const [selectedFile, setSelectedFile] = useState(null);
-  const { register, handleSubmit, reset } = useForm();
+  const { register, handleSubmit, reset } = useForm({
+    defaultValues: {
+      caption: post?.caption || "",
+    },
+  });
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -31,7 +35,7 @@ const PostForm = ({ userData, onPostSuccess }) => {
     setLoading(true);
     const { caption } = data;
 
-    if (!caption.trim() && !selectedFile) {
+    if (!caption.trim() && !imagePreview && !selectedFile) {
       setLoading(false);
       Swal.fire({
         icon: "error",
@@ -42,46 +46,41 @@ const PostForm = ({ userData, onPostSuccess }) => {
       return;
     }
 
-    let image = null;
+    let image = imagePreview;
     if (selectedFile) {
       image = await imageUpload(selectedFile);
       URL.revokeObjectURL(imagePreview);
     }
 
-    const postInfo = {
+    const updatedPostInfo = {
       caption,
-      image,
-      postedAt: new Date().toISOString(),
-      liked_by: [],
-      comments: [],
-      shared: [],
-      user_id: userData._id,
-      approvedStatus: false,
+      image: image || null,
+      updatedAt: new Date().toISOString(),
     };
 
     await axiosSecure
-      .post("/new-post", postInfo)
+      .patch(`/edit-post/${post._id}`, updatedPostInfo)
       .then((res) => {
-        if (res.data.insertedId) {
+        if (res.data.modifiedCount > 0) {
           setLoading(false);
           Swal.fire({
             icon: "success",
-            title: "Posting successful. Wait for approval.",
+            title: "Post updated successfully!",
             showConfirmButton: false,
             timer: 1500,
           });
-          reset();
+          reset({ caption: "" });
           setImagePreview(null);
           setSelectedFile(null);
           setModalOpen(false);
-          onPostSuccess();
+          onEditSuccess();
         }
       })
       .catch((error) => {
         setLoading(false);
         Swal.fire({
           icon: "error",
-          title: "Failed to post",
+          title: "Failed to update post",
           text: error.message,
           showConfirmButton: true,
         });
@@ -89,22 +88,14 @@ const PostForm = ({ userData, onPostSuccess }) => {
   };
 
   return (
-    <div className="mt-5 md:mt-24 mb-5">
-      <div
-        className="flex items-center gap-2 rounded-lg cursor-text"
+    <>
+      <button
         onClick={() => setModalOpen(true)}
+        className="text-gray-500 hover:text-gray-700"
       >
-        <img
-          className="w-14 h-14 object-cover rounded-full"
-          src={userData?.profile}
-          alt="profile"
-        />
-        <div className="flex-1 bg-gray-100 rounded-full py-4 px-6 text-gray-500">
-          What's on your mind?
-        </div>
-      </div>
+        <i className="fa-solid fa-pen-to-square text-2xl"></i>
+      </button>
 
-      {/* post modal */}
       <dialog
         open={modalOpen}
         className={`modal ${modalOpen ? "modal-open" : ""}`}
@@ -118,14 +109,12 @@ const PostForm = ({ userData, onPostSuccess }) => {
             />
             <span className="font-semibold">{userData?.name}</span>
           </div>
-          {/* form */}
           <form onSubmit={handleSubmit(onSubmit)} className="mt-2">
             <textarea
               placeholder="What's on your mind?"
               className="w-full h-24 py-2 px-3 text-lg rounded-xl"
               {...register("caption")}
             ></textarea>
-            {/* image preview */}
             {imagePreview && (
               <div className="relative mt-2">
                 <img
@@ -142,7 +131,6 @@ const PostForm = ({ userData, onPostSuccess }) => {
                 </button>
               </div>
             )}
-            {/* image input */}
             <div className="mt-2">
               <label className="flex items-center gap-2 cursor-pointer text-gray-600">
                 <i className="fa-solid fa-image text-xl"></i>
@@ -156,8 +144,6 @@ const PostForm = ({ userData, onPostSuccess }) => {
                 />
               </label>
             </div>
-
-            {/* submit button */}
             <div className="modal-action mt-4">
               <button
                 type="submit"
@@ -167,12 +153,11 @@ const PostForm = ({ userData, onPostSuccess }) => {
                 {loading ? (
                   <span className="loading loading-spinner text-white"></span>
                 ) : (
-                  "Post"
+                  "Update Post"
                 )}
               </button>
             </div>
           </form>
-          {/* close button */}
           <button
             className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
             onClick={() => setModalOpen(false)}
@@ -181,8 +166,8 @@ const PostForm = ({ userData, onPostSuccess }) => {
           </button>
         </div>
       </dialog>
-    </div>
+    </>
   );
 };
 
-export default PostForm;
+export default PostEditForm;

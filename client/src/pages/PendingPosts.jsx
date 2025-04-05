@@ -63,12 +63,19 @@ const PendingPosts = () => {
     <div className="grid lg:grid-cols-9">
       <div className="col-span-2"></div>
       <div className="col-span-5">
+        {posts.length === 0 && (
+          <div>
+            <h2 className="text-center text-gray-500">
+              No pending posts found.
+            </h2>
+          </div>
+        )}
         {posts.map((post, idx) => (
           <div key={idx} className="p-5 border border-black rounded-xl mb-5">
             <div className="flex items-center">
               <Link to={`/${post?.userData?.username}`}>
                 <img
-                  src={post?.userData?.image}
+                  src={post?.userData?.profile}
                   alt="profile"
                   className="w-10 h-10 rounded-full mr-3"
                 />
@@ -84,7 +91,11 @@ const PendingPosts = () => {
             </div>
             {post?.caption && <p className="mt-3">{post?.caption}</p>}
             {post?.image && (
-              <img src={post?.image} alt="post" className="w-full h-96 mt-3" />
+              <img
+                src={post?.image}
+                alt="post"
+                className="mt-3 w-full h-96 rounded-lg"
+              />
             )}
             {/* action */}
             <div className="flex gap-5 mt-5">

@@ -9,6 +9,7 @@ import ErrorPage from "./../pages/ErrorPage";
 import PrivateRoute from "./PrivateRoute";
 import NewsFeed from "../pages/NewsFeed";
 import Profile from "../pages/Profile";
+import Notifications from "../pages/Notifications";
 
 const router = createBrowserRouter([
   {
@@ -33,6 +34,14 @@ const router = createBrowserRouter([
         element: (
           <PrivateRoute>
             <PendingPosts></PendingPosts>
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "/notifications",
+        element: (
+          <PrivateRoute>
+            <Notifications></Notifications>
           </PrivateRoute>
         ),
       },

@@ -2,13 +2,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useAxiosSecure from "../hooks/useAxiosSecure";
 import toast from "react-hot-toast";
 
-export const useLikeMutation = (queryKey, userEmail) => {
+export const useLikeMutation = (queryKey, userId) => {
   const axiosSecure = useAxiosSecure();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (postId) =>
-      axiosSecure.post(`/like-post/${postId}`, { user_email: userEmail }),
+      axiosSecure.post(`/like-post/${postId}`, { user_id: userId }),
     onMutate: async (postId) => {
       await queryClient.cancelQueries(queryKey);
       const previousData = queryClient.getQueryData(queryKey);
@@ -19,9 +19,9 @@ export const useLikeMutation = (queryKey, userEmail) => {
           post._id === postId
             ? {
                 ...post,
-                liked_by: post.liked_by.includes(userEmail)
-                  ? post.liked_by.filter((email) => email !== userEmail)
-                  : [...post.liked_by, userEmail],
+                liked_by: post.liked_by.includes(userId)
+                  ? post.liked_by.filter((id) => id !== userId)
+                  : [...post.liked_by, userId],
               }
             : post
         );
@@ -131,6 +131,44 @@ export const useDeleteCommentMutation = (queryKey) => {
     onError: (err, variables, context) => {
       queryClient.setQueryData(queryKey, context.previousData);
       toast.error("Failed to delete comment!");
+    },
+    onSettled: () => queryClient.invalidateQueries(queryKey),
+  });
+};
+
+export const useEditCommentMutation = (queryKey) => {
+  const axiosSecure = useAxiosSecure();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ postId, commentId, comment }) =>
+      axiosSecure.patch(`/edit-comment/${postId}/${commentId}`, { comment }),
+    onMutate: async ({ postId, commentId, comment }) => {
+      await queryClient.cancelQueries(queryKey);
+      const previousData = queryClient.getQueryData(queryKey);
+
+      queryClient.setQueryData(queryKey, (old) => {
+        const posts = Array.isArray(old) ? old : old?.posts || [];
+        const updatedPosts = posts.map((post) =>
+          post._id === postId
+            ? {
+                ...post,
+                comments: post.comments.map((c) =>
+                  c._id === commentId ? { ...c, comment } : c
+                ),
+              }
+            : post
+        );
+        return Array.isArray(old)
+          ? updatedPosts
+          : { ...old, posts: updatedPosts };
+      });
+
+      return { previousData };
+    },
+    onError: (err, variables, context) => {
+      queryClient.setQueryData(queryKey, context.previousData);
+      toast.error("Failed to edit comment!");
     },
     onSettled: () => queryClient.invalidateQueries(queryKey),
   });

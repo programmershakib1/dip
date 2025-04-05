@@ -1,13 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import usePostActions from "../utils/usePostActions";
 import useAxiosPublic from "../hooks/useAxiosPublic";
 import useAxiosSecure from "../hooks/useAxiosSecure";
-import useAuth from "../hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import PostCard from "../components/PostCard";
-import {
-  useLikeMutation,
-  useCommentMutation,
-  useDeleteCommentMutation,
-} from "./../utils/usePostMutations";
+import useAuth from "../hooks/useAuth";
 
 const NewsFeed = () => {
   const { user } = useAuth();
@@ -48,22 +44,7 @@ const NewsFeed = () => {
     enabled: !!uniqueUserIds.length && !isLoading,
   });
 
-  const likeMutation = useLikeMutation(["news-feeds"], user?.email);
-  const commentMutation = useCommentMutation(["news-feeds"], current_user?._id);
-  const deleteCommentMutation = useDeleteCommentMutation(["news-feeds"]);
-
-  const handleLike = (postId) => {
-    likeMutation.mutate(postId);
-  };
-
-  const handleComment = (postId, commentText) => {
-    if (!commentText.trim()) return;
-    commentMutation.mutate({ postId, comment: commentText });
-  };
-
-  const handleDeleteComment = (postId, commentId) => {
-    deleteCommentMutation.mutate({ postId, commentId });
-  };
+  const actions = usePostActions(["news-feeds"], current_user?._id);
 
   if (isLoading)
     return (
@@ -82,11 +63,12 @@ const NewsFeed = () => {
             post={post}
             userData={post.userData}
             currentUser={user}
-            onLike={handleLike}
-            onComment={handleComment}
-            onDeleteComment={handleDeleteComment}
+            onLike={actions.handleLike}
+            onComment={actions.handleComment}
+            onDeleteComment={actions.handleDeleteComment}
             commentUsers={commentUsers}
             usersLoading={usersLoading}
+            onEditComment={actions.handleEditComment}
           />
         ))}
       </div>

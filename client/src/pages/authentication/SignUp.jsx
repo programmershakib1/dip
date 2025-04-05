@@ -1,4 +1,3 @@
-import { generateDefaultImage, generateUsername } from "../../utils/utils";
 import useAxiosPublic from "./../../hooks/useAxiosPublic";
 import { auth } from "../../firebase/firebase.config";
 import { Link, useNavigate } from "react-router-dom";
@@ -7,6 +6,11 @@ import { updateProfile } from "firebase/auth";
 import useAuth from "../../hooks/useAuth";
 import toast from "react-hot-toast";
 import { useState } from "react";
+import {
+  generateProfile,
+  generateCover,
+  generateUsername,
+} from "../../utils/utils";
 
 const SignUp = () => {
   const {
@@ -16,9 +20,9 @@ const SignUp = () => {
     locationPath,
     setLocationPath,
   } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const axiosPublic = useAxiosPublic();
   const navigate = useNavigate();
+  const axiosPublic = useAxiosPublic();
+  const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
@@ -59,20 +63,22 @@ const SignUp = () => {
         );
       }
 
-      const imageUrl = await generateDefaultImage(name);
+      const profileUrl = await generateProfile(name);
+      const coverUrl = await generateCover(name);
       const username = await generateUsername(name);
 
       const userInfo = {
         name,
         username,
         email,
-        image: imageUrl,
+        profile: profileUrl,
+        cover: coverUrl,
         friends: [],
         following: [],
         followers: [],
         sentRequests: [],
         pendingRequests: [],
-        created_at: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
       };
 
       const { user } = await axiosPublic.get(`/user/${email}`);
@@ -91,9 +97,9 @@ const SignUp = () => {
       setUser(result?.user);
       updateProfile(auth.currentUser, {
         displayName: name,
-        photoURL: imageUrl,
+        photoURL: profileUrl,
       });
-      setUser({ displayName: name, photoURL: imageUrl });
+      setUser({ displayName: name, photoURL: profileUrl });
       toast.success(`Welcome ${name}`);
       navigate(locationPath ? locationPath : "/");
     } catch (error) {
@@ -117,19 +123,21 @@ const SignUp = () => {
       const { data } = await axiosPublic.get(`/user/${user.email}`);
 
       if (!data) {
+        const coverUrl = await generateCover(user.displayName);
         const username = await generateUsername(user.displayName);
 
         const userInfo = {
           name: user.displayName,
           username: username,
           email: user.email,
-          image: user.photoURL,
+          profile: user.photoURL,
+          cover: coverUrl,
           friends: [],
           following: [],
           followers: [],
           sentRequests: [],
           pendingRequests: [],
-          created_at: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
         };
 
         await axiosPublic.post(`/user`, userInfo);

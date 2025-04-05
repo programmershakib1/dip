@@ -1,6 +1,6 @@
+import { generateCover, generateUsername } from "../../utils/utils";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import useAxiosPublic from "../../hooks/useAxiosPublic";
-import { generateUsername } from "../../utils/utils";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import useAuth from "../../hooks/useAuth";
 import toast from "react-hot-toast";
@@ -14,10 +14,10 @@ const SignIn = () => {
     locationPath,
     setLocationPath,
   } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const axiosPublic = useAxiosPublic();
   const location = useLocation();
   const navigate = useNavigate();
+  const axiosPublic = useAxiosPublic();
+  const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   const togglePasswordVisibility = () => setPasswordVisible(!passwordVisible);
@@ -60,19 +60,21 @@ const SignIn = () => {
       const { data } = await axiosPublic.get(`/user/${user.email}`);
 
       if (!data) {
+        const coverUrl = await generateCover(user.displayName);
         const username = await generateUsername(user.displayName);
 
         const userInfo = {
           name: user.displayName,
           username: username,
           email: user.email,
-          image: user.photoURL,
+          profile: user.photoURL,
+          cover: coverUrl,
           friends: [],
           following: [],
           followers: [],
           sentRequests: [],
           pendingRequests: [],
-          created_at: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
         };
 
         await axiosPublic.post(`/user`, userInfo);

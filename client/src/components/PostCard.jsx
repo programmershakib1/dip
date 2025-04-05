@@ -14,8 +14,10 @@ const PostCard = ({
   onDeletePost,
   commentUsers,
   usersLoading,
+  onEditSuccess,
+  onEditComment,
 }) => {
-  const isLiked = post?.liked_by?.includes(currentUser?.email);
+  const isLiked = post?.liked_by?.includes(userData?._id);
   const [expandedCaption, setExpandedCaption] = useState(false);
   const [commentText, setCommentText] = useState("");
 
@@ -30,7 +32,7 @@ const PostCard = ({
       <div className="flex items-center">
         <Link to={`/${userData?.username}`}>
           <img
-            src={userData?.image}
+            src={userData?.profile}
             alt="profile"
             className="w-10 h-10 object-cover rounded-full mr-3"
           />
@@ -70,7 +72,11 @@ const PostCard = ({
         </div>
       )}
       {post?.image && (
-        <img src={post?.image} alt="post" className="w-full h-96 mt-3" />
+        <img
+          src={post?.image}
+          alt="post"
+          className="mt-3 w-full h-96 rounded-lg"
+        />
       )}
       <PostActions
         post={post}
@@ -80,6 +86,8 @@ const PostCard = ({
           document.getElementById(`modal-${post._id}`).showModal()
         }
         onDeletePost={onDeletePost}
+        userData={userData}
+        onEditSuccess={onEditSuccess}
       />
       <CommentModal
         post={post}
@@ -91,6 +99,7 @@ const PostCard = ({
         commentUsers={commentUsers}
         usersLoading={usersLoading}
         onDeleteComment={onDeleteComment}
+        onEditComment={onEditComment}
       />
     </div>
   );
