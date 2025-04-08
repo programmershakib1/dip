@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
+const nodemailer = require("nodemailer");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
@@ -20,6 +21,7 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
+
 const verifyToken = (req, res, next) => {
   const token = req.cookies?.token;
   if (!token) {
@@ -33,6 +35,15 @@ const verifyToken = (req, res, next) => {
     next();
   });
 };
+
+// nodemailer configuration
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
+  },
+});
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@programmershakib.sm4uc.mongodb.net/?retryWrites=true&w=majority&appName=programmershakib`;
 
@@ -58,6 +69,9 @@ async function run() {
     const approvedPostsCollection = client
       .db("DIPDB")
       .collection("approvedPosts");
+    const verificationCodesCollection = client
+      .db("DIPDB")
+      .collection("verificationCodes");
 
     // jwt
     const cookieOptions = {
@@ -80,6 +94,58 @@ async function run() {
       res
         .clearCookie("token", { ...cookieOptions, maxAge: 0 })
         .send({ success: true });
+    });
+
+    // verification code send
+    app.post("/send-verification-code", async (req, res) => {
+      const { email } = req.body;
+      const verificationCode = Math.floor(
+        100000 + Math.random() * 900000
+      ).toString();
+
+      const verificationData = {
+        email,
+        code: verificationCode,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      };
+
+      await verificationCodesCollection.deleteOne({ email });
+      await verificationCodesCollection.insertOne(verificationData);
+
+      const mailOptions = {
+        from: process.env.MAIL_USER,
+        to: email,
+        subject: "Your Verification Code",
+        text: `Your verification code is: ${verificationCode}. It will expire in 10 minutes.`,
+      };
+
+      try {
+        await transporter.sendMail(mailOptions);
+        res.status(200).send({ message: "Verification code sent" });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ error: "Failed to send verification code" });
+      }
+    });
+
+    // code verify
+    app.post("/verify-code", async (req, res) => {
+      const { email, code } = req.body;
+
+      const verificationData = await verificationCodesCollection.findOne({
+        email,
+      });
+
+      if (
+        !verificationData ||
+        verificationData.code !== code ||
+        new Date() > new Date(verificationData.expiresAt)
+      ) {
+        return res.status(400).send({ error: "Invalid or expired code" });
+      }
+
+      await verificationCodesCollection.deleteOne({ email });
+      res.status(200).send({ message: "Code verified successfully" });
     });
 
     // posts
@@ -116,6 +182,45 @@ async function run() {
         .sort({ _id: -1 })
         .toArray();
       res.send({ userData, posts });
+    });
+
+    // profile page data and approved posts
+    app.get("/approved-posts/:username", verifyToken, async (req, res) => {
+      const username = req.params.username;
+      const currentUserEmail = req.query.currentUserEmail;
+
+      if (!currentUserEmail) {
+        return res
+          .status(400)
+          .send({ message: "Current user email is required" });
+      }
+
+      try {
+        const targetedUser = await usersCollection.findOne({ username });
+        if (!targetedUser) {
+          return res.status(404).send({ message: "User not found" });
+        }
+
+        const currentUser = await usersCollection.findOne({
+          email: currentUserEmail,
+        });
+        if (!currentUser) {
+          return res.status(404).send({ message: "Current user not found" });
+        }
+
+        const posts = await allPostsCollection
+          .find({ user_id: targetedUser._id.toString(), approvedStatus: true })
+          .toArray();
+
+        res.send({
+          userData: targetedUser,
+          currentUserData: currentUser,
+          posts,
+        });
+      } catch (error) {
+        console.error("Error fetching approved posts:", error);
+        res.status(500).send({ message: "Server error" });
+      }
     });
 
     // create post
@@ -656,6 +761,17 @@ async function run() {
     app.post("/user", async (req, res) => {
       const userInfo = req.body;
       const result = await usersCollection.insertOne(userInfo);
+      res.send(result);
+    });
+
+    //update user
+    app.patch("/user/:email", async (req, res) => {
+      const email = req.params.email;
+      const updatedData = req.body;
+      const result = await usersCollection.updateOne(
+        { email },
+        { $set: updatedData }
+      );
       res.send(result);
     });
 

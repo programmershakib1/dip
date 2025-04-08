@@ -112,7 +112,7 @@ const PostEditForm = ({ post, userData, onEditSuccess }) => {
           <form onSubmit={handleSubmit(onSubmit)} className="mt-2">
             <textarea
               placeholder="What's on your mind?"
-              className="w-full h-24 py-2 px-3 text-lg rounded-xl"
+              className="w-full h-24 py-2 px-3 rounded-xl"
               {...register("caption")}
             ></textarea>
             {imagePreview && (

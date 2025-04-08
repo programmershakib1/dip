@@ -1,10 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useAxiosSecure from "../../hooks/useAxiosSecure";
-import useAuth from "../../hooks/useAuth";
 import toast from "react-hot-toast";
 
-const AddFriendButton = ({ targetUserId, currentUserData }) => {
-  const { user: currentUser } = useAuth();
+const AddFriendButton = ({ targetUserId, currentUserData, queryKey }) => {
   const axiosSecure = useAxiosSecure();
   const queryClient = useQueryClient();
 
@@ -14,38 +12,35 @@ const AddFriendButton = ({ targetUserId, currentUserData }) => {
         currentId: currentUserData._id,
       }),
     onMutate: () => {
-      const prevCurrent = queryClient.getQueryData([
-        "current_user",
-        currentUser.email,
-      ]);
-      const prevTarget = queryClient.getQueryData(["user", targetUserId]);
+      const previousData = queryClient.getQueryData(queryKey);
 
-      queryClient.setQueryData(["current_user", currentUser.email], (old) => ({
+      queryClient.setQueryData(queryKey, (old) => ({
         ...old,
-        sentRequests: [...(old?.sentRequests || []), targetUserId],
-      }));
-
-      queryClient.setQueryData(["user", targetUserId], (old) => ({
-        ...old,
-        pendingRequests: [...(old?.pendingRequests || []), currentUserData._id],
+        currentUserData: {
+          ...old.currentUserData,
+          sentRequests: [
+            ...(old.currentUserData?.sentRequests || []),
+            targetUserId,
+          ],
+        },
+        userData: {
+          ...old.userData,
+          pendingRequests: [
+            ...(old.userData?.pendingRequests || []),
+            currentUserData._id,
+          ],
+        },
       }));
 
       toast.success("Friend request sent!");
-      return { prevCurrent, prevTarget };
+      return { previousData };
     },
     onError: (err, variables, context) => {
-      queryClient.setQueryData(
-        ["current_user", currentUser.email],
-        context.prevCurrent
-      );
-      queryClient.setQueryData(["user", targetUserId], context.prevTarget);
+      queryClient.setQueryData(queryKey, context.previousData);
       toast.error("Failed to send friend request!");
     },
     onSettled: () => {
-      queryClient.invalidateQueries(["current_user", currentUser.email], {
-        exact: true,
-      });
-      queryClient.invalidateQueries(["user", targetUserId], { exact: true });
+      queryClient.invalidateQueries(queryKey, { exact: true });
     },
   });
 
@@ -55,41 +50,35 @@ const AddFriendButton = ({ targetUserId, currentUserData }) => {
         currentId: currentUserData._id,
       }),
     onMutate: () => {
-      const prevCurrent = queryClient.getQueryData([
-        "current_user",
-        currentUser.email,
-      ]);
-      const prevTarget = queryClient.getQueryData(["user", targetUserId]);
+      const previousData = queryClient.getQueryData(queryKey);
 
-      queryClient.setQueryData(["current_user", currentUser.email], (old) => ({
+      queryClient.setQueryData(queryKey, (old) => ({
         ...old,
-        sentRequests:
-          old?.sentRequests?.filter((id) => id !== targetUserId) || [],
-      }));
-
-      queryClient.setQueryData(["user", targetUserId], (old) => ({
-        ...old,
-        pendingRequests:
-          old?.pendingRequests?.filter((id) => id !== currentUserData._id) ||
-          [],
+        currentUserData: {
+          ...old.currentUserData,
+          sentRequests:
+            old.currentUserData?.sentRequests?.filter(
+              (id) => id !== targetUserId
+            ) || [],
+        },
+        userData: {
+          ...old.userData,
+          pendingRequests:
+            old.userData?.pendingRequests?.filter(
+              (id) => id !== currentUserData._id
+            ) || [],
+        },
       }));
 
       toast.success("Friend request cancelled!");
-      return { prevCurrent, prevTarget };
+      return { previousData };
     },
     onError: (err, variables, context) => {
-      queryClient.setQueryData(
-        ["current_user", currentUser.email],
-        context.prevCurrent
-      );
-      queryClient.setQueryData(["user", targetUserId], context.prevTarget);
+      queryClient.setQueryData(queryKey, context.previousData);
       toast.error("Failed to cancel friend request!");
     },
     onSettled: () => {
-      queryClient.invalidateQueries(["current_user", currentUser.email], {
-        exact: true,
-      });
-      queryClient.invalidateQueries(["user", targetUserId], { exact: true });
+      queryClient.invalidateQueries(queryKey, { exact: true });
     },
   });
 

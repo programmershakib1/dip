@@ -87,7 +87,7 @@ const Profile = () => {
               key={post._id}
               post={post}
               userData={userData}
-              currentUser={user}
+              currentUser={userData}
               onLike={actions.handleLike}
               onComment={actions.handleComment}
               onDeleteComment={actions.handleDeleteComment}

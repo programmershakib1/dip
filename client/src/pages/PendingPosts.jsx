@@ -1,11 +1,13 @@
 import useAxiosSecure from "../hooks/useAxiosSecure";
 import { useQuery } from "@tanstack/react-query";
 import { getTimeAgo } from "../utils/utils";
-import Swal from "sweetalert2";
 import { Link } from "react-router-dom";
+import { useState } from "react";
+import Swal from "sweetalert2";
 
 const PendingPosts = () => {
   const axiosSecure = useAxiosSecure();
+   const [expandedCaption, setExpandedCaption] = useState(false);
 
   // get pending posts
   const {
@@ -60,7 +62,7 @@ const PendingPosts = () => {
     );
 
   return (
-    <div className="grid lg:grid-cols-9">
+    <div className="mx-5 md:mx-0 grid lg:grid-cols-9">
       <div className="col-span-2"></div>
       <div className="col-span-5">
         {posts.length === 0 && (
@@ -89,12 +91,38 @@ const PendingPosts = () => {
                 </p>
               </div>
             </div>
-            {post?.caption && <p className="mt-3">{post?.caption}</p>}
+            {post?.caption && (
+        <div className="mt-3">
+          {expandedCaption || post.caption.length <= 200 ? (
+            <p>{post.caption}</p>
+          ) : (
+            <>
+              <p>
+                {post.caption.slice(0, 125)}...
+                <button
+                  className="text-gray-500 hover:underline ml-1"
+                  onClick={() => setExpandedCaption(true)}
+                >
+                  See more
+                </button>
+              </p>
+            </>
+          )}
+          {expandedCaption && post.caption.length > 200 && (
+            <button
+              className="text-gray-500 hover:underline mt-1"
+              onClick={() => setExpandedCaption(false)}
+            >
+              See less
+            </button>
+          )}
+        </div>
+      )}
             {post?.image && (
               <img
                 src={post?.image}
                 alt="post"
-                className="mt-3 w-full h-96 rounded-lg"
+                className="mt-3 w-full h-52 md:h-[400px] object-cover rounded-lg"
               />
             )}
             {/* action */}

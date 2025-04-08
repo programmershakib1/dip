@@ -15,7 +15,6 @@ import {
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [locationPath, setLocationPath] = useState("");
   const googleProvider = new GoogleAuthProvider();
 
   const handleSignUp = (email, password) => {
@@ -77,8 +76,6 @@ const AuthProvider = ({ children }) => {
     user,
     setUser,
     loading,
-    locationPath,
-    setLocationPath,
   };
 
   return (

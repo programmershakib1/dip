@@ -113,25 +113,25 @@ const FriendRequests = () => {
   }
 
   return (
-    <div className="grid lg:grid-cols-9">
+    <div className="mx-5 md:mx-0 grid lg:grid-cols-9">
       <div className="col-span-2"></div>
       <div className="col-span-5">
         {requestUsers.length > 0 ? (
           requestUsers.map((requestUser) => (
             <div
               key={requestUser._id}
-              className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-gray-200 border p-4 rounded-xl mb-3"
+              className="flex justify-between items-center gap-3 bg-gray-200 border p-4 rounded-xl mb-3"
             >
               <div className="flex items-center gap-2">
                 <Link to={`/${requestUser?.username}`}>
                   <img
-                    className="w-16 h-16 object-cover rounded-full"
+                    className="w-10 h-10 md:w-16 md:h-16 object-cover rounded-full"
                     src={requestUser.profile}
                     alt={requestUser.name}
                   />
                 </Link>
                 <Link to={`/${requestUser?.username}`}>
-                  <h3 className="text-xl font-semibold">{requestUser.name}</h3>
+                  <h3 className="md:text-xl font-semibold">{requestUser.name}</h3>
                 </Link>
               </div>
               <div className="flex gap-3">

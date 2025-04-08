@@ -2,19 +2,29 @@ import { createBrowserRouter } from "react-router-dom";
 import SignIn from "./../pages/authentication/SignIn";
 import SignUp from "./../pages/authentication/SignUp";
 import FriendRequests from "../pages/FriendRequests";
+import Notifications from "../pages/Notifications";
 import MainLayout from "./../layouts/MainLayout";
 import PendingPosts from "../pages/PendingPosts";
 import ProfilePage from "../pages/ProfilePage";
 import ErrorPage from "./../pages/ErrorPage";
+import GetStarted from "../pages/GetStarted";
 import PrivateRoute from "./PrivateRoute";
 import NewsFeed from "../pages/NewsFeed";
+import Settings from "../pages/Settings";
 import Profile from "../pages/Profile";
-import Notifications from "../pages/Notifications";
 
 const router = createBrowserRouter([
   {
+    path: "/getStarted",
+    element: <GetStarted></GetStarted>,
+  },
+  {
     path: "/",
-    element: <MainLayout></MainLayout>,
+    element: (
+      <PrivateRoute>
+        <MainLayout></MainLayout>
+      </PrivateRoute>
+    ),
     errorElement: <ErrorPage></ErrorPage>,
     children: [
       {
@@ -23,53 +33,37 @@ const router = createBrowserRouter([
       },
       {
         path: "/friends",
-        element: (
-          <PrivateRoute>
-            <FriendRequests></FriendRequests>
-          </PrivateRoute>
-        ),
+        element: <FriendRequests></FriendRequests>,
       },
       {
         path: "/pending-posts",
-        element: (
-          <PrivateRoute>
-            <PendingPosts></PendingPosts>
-          </PrivateRoute>
-        ),
+        element: <PendingPosts></PendingPosts>,
       },
       {
         path: "/notifications",
-        element: (
-          <PrivateRoute>
-            <Notifications></Notifications>
-          </PrivateRoute>
-        ),
+        element: <Notifications></Notifications>,
       },
       {
         path: "/profile",
-        element: (
-          <PrivateRoute>
-            <Profile></Profile>
-          </PrivateRoute>
-        ),
+        element: <Profile></Profile>,
       },
       {
         path: "/:username",
-        element: (
-          <PrivateRoute>
-            <ProfilePage></ProfilePage>
-          </PrivateRoute>
-        ),
+        element: <ProfilePage></ProfilePage>,
       },
       {
-        path: "/signin",
-        element: <SignIn></SignIn>,
-      },
-      {
-        path: "/signup",
-        element: <SignUp></SignUp>,
+        path: "/settings",
+        element: <Settings></Settings>,
       },
     ],
+  },
+  {
+    path: "/signin",
+    element: <SignIn></SignIn>,
+  },
+  {
+    path: "/signup",
+    element: <SignUp></SignUp>,
   },
 ]);
 

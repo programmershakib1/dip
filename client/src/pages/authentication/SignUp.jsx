@@ -13,22 +13,38 @@ import {
 } from "../../utils/utils";
 
 const SignUp = () => {
-  const {
-    handleSignUp,
-    handleGoogleLogin,
-    setUser,
-    locationPath,
-    setLocationPath,
-  } = useAuth();
+  const { handleSignUp, handleGoogleLogin, setUser } = useAuth();
   const navigate = useNavigate();
   const axiosPublic = useAxiosPublic();
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [isCodeSent, setIsCodeSent] = useState(false);
 
   const togglePasswordVisibility = () => setPasswordVisible(!passwordVisible);
   const toggleConfirmPasswordVisibility = () =>
     setConfirmPasswordVisible(!confirmPasswordVisible);
+
+  // send code
+  const sendVerificationCode = async (email) => {
+    try {
+      setLoading(true);
+      const response = await axiosPublic.post("/send-verification-code", {
+        email,
+      });
+      if (response.status === 200) {
+        toast.success("Verification code sent to your email.");
+        setIsCodeSent(true);
+      }
+    } catch (error) {
+      toast.error(
+        error.response?.data?.error || "Failed to send verification code."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     setLoading(true);
@@ -63,6 +79,25 @@ const SignUp = () => {
         );
       }
 
+      // send verification code
+      if (!isCodeSent) {
+        await sendVerificationCode(email);
+        return;
+      }
+
+      // code verify
+      const verifyResponse = await axiosPublic.post("/verify-code", {
+        email,
+        code: verificationCode,
+      });
+
+      if (verifyResponse.status !== 200) {
+        setLoading(false);
+        return toast.error(
+          verifyResponse.data?.error || "Invalid or expired code"
+        );
+      }
+
       const profileUrl = await generateProfile(name);
       const coverUrl = await generateCover(name);
       const username = await generateUsername(name);
@@ -71,6 +106,7 @@ const SignUp = () => {
         name,
         username,
         email,
+        role: "user",
         profile: profileUrl,
         cover: coverUrl,
         friends: [],
@@ -101,7 +137,9 @@ const SignUp = () => {
       });
       setUser({ displayName: name, photoURL: profileUrl });
       toast.success(`Welcome ${name}`);
-      navigate(locationPath ? locationPath : "/");
+      setVerificationCode("");
+      setIsCodeSent(false);
+      navigate("/");
     } catch (error) {
       setLoading(false);
       toast.error(error?.code || "Something went wrong");
@@ -130,6 +168,7 @@ const SignUp = () => {
           name: user.displayName,
           username: username,
           email: user.email,
+          role: "user",
           profile: user.photoURL,
           cover: coverUrl,
           friends: [],
@@ -145,42 +184,39 @@ const SignUp = () => {
 
       setUser(user);
       toast.success(`Welcome ${user?.displayName}`);
-      navigate(locationPath ? locationPath : "/");
+      navigate("/");
     } catch (error) {
       toast.error(error?.code);
     }
   };
 
-  const handleLocationPath = () => {
-    setLocationPath(locationPath);
-  };
-
   return (
-    <div className="">
-      <form onSubmit={handleSubmit} className="flex flex-col items-center">
-        <div className="flex gap-3">
+    <div className="mt-20">
+      <h2 className="text-center text-3xl font-extrabold text-gray-900">
+        Welcome
+      </h2>
+      <div className="flex justify-center items-center mt-10">
+        <form onSubmit={handleSubmit} className="w-80 space-y-3">
           <input
             name="name"
             type="text"
             placeholder="Name"
-            className="border border-black py-1 px-2 rounded-md"
+            className="w-full border border-black py-2 px-4 rounded-md"
             required
           />
           <input
             name="email"
             type="email"
             placeholder="Email"
-            className="border border-black py-1 px-2 rounded-md"
+            className="w-full border border-black py-2 px-4 rounded-md"
             required
           />
-        </div>
-        <div className="flex gap-3 mt-3">
-          <div className="relative">
+          <div className="relative w-full">
             <input
               name="password"
               type={passwordVisible ? "text" : "password"}
               placeholder="Password"
-              className="border border-black py-1 px-2 rounded-md"
+              className="w-full border border-black py-2 px-4 rounded-md"
               required
             />
             <span
@@ -190,12 +226,12 @@ const SignUp = () => {
               {passwordVisible ? <FaEye /> : <FaEyeSlash />}
             </span>
           </div>
-          <div className="relative">
+          <div className="relative w-full">
             <input
               name="confirm_password"
               type={confirmPasswordVisible ? "text" : "password"}
               placeholder="Confirm Password"
-              className="border border-black py-1 px-2 rounded-md"
+              className="w-full border border-black py-2 px-4 rounded-md"
               required
             />
             <span
@@ -205,18 +241,32 @@ const SignUp = () => {
               {confirmPasswordVisible ? <FaEye /> : <FaEyeSlash />}
             </span>
           </div>
-        </div>
-        <button className="mt-5 w-20 bg-black text-white py-1 px-2 rounded-md">
-          {loading ? (
-            <span className="loading loading-spinner text-center text-white"></span>
-          ) : (
-            "Sign Up"
+          {isCodeSent && (
+            <div className="w-full">
+              <input
+                type="text"
+                placeholder="Enter Verification Code"
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value)}
+                className="w-full border border-black py-2 px-4 rounded-md"
+                required
+              />
+            </div>
           )}
-        </button>
-      </form>
+          <button className="w-full bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded-md">
+            {loading ? (
+              <span className="loading loading-spinner text-center text-white"></span>
+            ) : isCodeSent ? (
+              "Verify"
+            ) : (
+              "Sign Up"
+            )}
+          </button>
+        </form>
+      </div>
       <p className="mt-3 text-center text-sm font-semibold">
         Already have an Account ?
-        <Link to="/signin" onClick={handleLocationPath} className="underline">
+        <Link to="/signin" className="text-blue-700">
           {" "}
           Sign In
         </Link>
@@ -224,10 +274,13 @@ const SignUp = () => {
       <div className="flex justify-center mt-3">
         <button
           onClick={handleGoogleSignUp}
-          className="bg-black text-white py-1 px-3 rounded-md"
+          className="w-80 flex items-center gap-3 hover:bg-zinc-100 font-semibold border border-black py-2 px-4 rounded-md"
         >
-          <i className="fa-brands fa-google text-white pr-2"></i>
-          Continue with Google
+          <img
+            src="https://auth.openai.com/assets/google-logo-NePEveMl.svg"
+            alt=""
+          />
+          <span>Continue with Google</span>
         </button>
       </div>
     </div>

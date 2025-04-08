@@ -17,7 +17,7 @@ const PostCard = ({
   onEditSuccess,
   onEditComment,
 }) => {
-  const isLiked = post?.liked_by?.includes(userData?._id);
+  const isLiked = post?.liked_by?.includes(currentUser?._id);
   const [expandedCaption, setExpandedCaption] = useState(false);
   const [commentText, setCommentText] = useState("");
 
@@ -75,7 +75,7 @@ const PostCard = ({
         <img
           src={post?.image}
           alt="post"
-          className="mt-3 w-full h-96 rounded-lg"
+          className="mt-3 w-full h-52 md:h-[400px] object-cover rounded-lg"
         />
       )}
       <PostActions

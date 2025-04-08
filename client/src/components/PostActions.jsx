@@ -46,7 +46,7 @@ const PostActions = ({
       </div>
       <div className="flex items-center gap-5">
         {/* edit button */}
-        {pathname !== "/" && (
+        {pathname === "/profile" && (
           <PostEditForm
             post={post}
             userData={userData}

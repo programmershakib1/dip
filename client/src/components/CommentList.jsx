@@ -71,13 +71,17 @@ const CommentList = ({
                 <i className="fa-solid fa-thumbs-up text-lg"></i>
               </button>
               {/* edit */}
-              <button onClick={() => setIsEditing(true)}>
-                <i className="fa-solid fa-pen-to-square text-sm"></i>
-              </button>
+              {userData._id === comment.user_id && (
+                <button onClick={() => setIsEditing(true)}>
+                  <i className="fa-solid fa-pen-to-square text-sm"></i>
+                </button>
+              )}
               {/* delete */}
-              <button onClick={() => handleDeleteComment(post_id, _id)}>
-                <i className="fa-solid fa-trash text-sm" />
-              </button>
+              {userData._id === comment.user_id && (
+                <button onClick={() => handleDeleteComment(post_id, _id)}>
+                  <i className="fa-solid fa-trash text-sm" />
+                </button>
+              )}
             </div>
           </>
         )}

@@ -30,7 +30,7 @@ const CommentModal = ({
             <img
               src={userData?.profile}
               alt="profile"
-              className="w-11 h-11 rounded-full"
+              className="w-11 h-11 object-cover rounded-full"
             />
             <div>
               <h1 className="font-semibold">{userData?.name}</h1>
@@ -39,15 +39,15 @@ const CommentModal = ({
               </p>
             </div>
           </div>
-          {post?.caption && <p className="my-2">{post?.caption}</p>}
+          {post?.caption && <p className="mb-4">{post?.caption}</p>}
           {post?.image && (
             <img
               src={post?.image}
               alt="post"
-              className="w-full h-96 rounded-lg"
+              className="w-full h-52 md:h-[450px] object-cover rounded-lg"
             />
           )}
-          <div className="overflow-y-auto max-h-[400px] my-3">
+          <div className="overflow-y-auto max-h-[400px] mt-5 mb-3">
             {usersLoading ? (
               <div className="text-center">
                 <span className="loading loading-spinner" />
@@ -69,7 +69,7 @@ const CommentModal = ({
         <div className="bg-white sticky bottom-0 z-10 pt-4 flex items-center gap-3">
           <img
             className="w-10 h-10 object-cover rounded-full"
-            src={currentUser?.photoURL}
+            src={currentUser?.profile}
             alt="profile"
           />
           <input

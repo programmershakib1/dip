@@ -89,17 +89,17 @@ const PostForm = ({ userData, onPostSuccess }) => {
   };
 
   return (
-    <div className="mt-5 md:mt-24 mb-5">
-      <div
-        className="flex items-center gap-2 rounded-lg cursor-text"
-        onClick={() => setModalOpen(true)}
-      >
+    <div className="mt-5 mb-5 md:mb-10">
+      <div className="flex items-center gap-2 rounded-lg cursor-text">
         <img
-          className="w-14 h-14 object-cover rounded-full"
+          className="w-11 h-11 md:w-14 md:h-14 object-cover rounded-full"
           src={userData?.profile}
           alt="profile"
         />
-        <div className="flex-1 bg-gray-100 rounded-full py-4 px-6 text-gray-500">
+        <div
+          onClick={() => setModalOpen(true)}
+          className="flex-1 bg-gray-100 rounded-full py-2 md:py-4 px-6 text-gray-500 cursor-pointer"
+        >
           What's on your mind?
         </div>
       </div>
@@ -122,7 +122,7 @@ const PostForm = ({ userData, onPostSuccess }) => {
           <form onSubmit={handleSubmit(onSubmit)} className="mt-2">
             <textarea
               placeholder="What's on your mind?"
-              className="w-full h-24 py-2 px-3 text-lg rounded-xl"
+              className="w-full h-24 py-2 px-3 rounded-xl"
               {...register("caption")}
             ></textarea>
             {/* image preview */}

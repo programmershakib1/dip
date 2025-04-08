@@ -1,10 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useAxiosSecure from "../../hooks/useAxiosSecure";
-import useAuth from "../../hooks/useAuth";
 import toast from "react-hot-toast";
 
-const FollowButton = ({ targetUserId, currentUserData }) => {
-  const { user: currentUser } = useAuth();
+const FollowButton = ({ targetUserId, currentUserData, queryKey }) => {
   const axiosSecure = useAxiosSecure();
   const queryClient = useQueryClient();
 
@@ -17,44 +15,39 @@ const FollowButton = ({ targetUserId, currentUserData }) => {
         }
       ),
     onMutate: (isFollowing) => {
-      const prevCurrent = queryClient.getQueryData([
-        "current_user",
-        currentUser.email,
-      ]);
-      const prevTarget = queryClient.getQueryData(["user", targetUserId]);
+      const previousData = queryClient.getQueryData(queryKey);
 
-      queryClient.setQueryData(["current_user", currentUser.email], (old) => ({
+      queryClient.setQueryData(queryKey, (old) => ({
         ...old,
-        following: isFollowing
-          ? old?.following?.filter((id) => id !== targetUserId) || []
-          : [...(old?.following || []), targetUserId],
-      }));
-
-      queryClient.setQueryData(["user", targetUserId], (old) => ({
-        ...old,
-        followers: isFollowing
-          ? old?.followers?.filter((id) => id !== currentUserData._id) || []
-          : [...(old?.followers || []), currentUserData._id],
+        currentUserData: {
+          ...old.currentUserData,
+          following: isFollowing
+            ? old.currentUserData?.following?.filter(
+                (id) => id !== targetUserId
+              ) || []
+            : [...(old.currentUserData?.following || []), targetUserId],
+        },
+        userData: {
+          ...old.userData,
+          followers: isFollowing
+            ? old.userData?.followers?.filter(
+                (id) => id !== currentUserData._id
+              ) || []
+            : [...(old.userData?.followers || []), currentUserData._id],
+        },
       }));
 
       toast.success(
         `${isFollowing ? "Unfollowed" : "Following"} successfully!`
       );
-      return { prevCurrent, prevTarget };
+      return { previousData };
     },
     onError: (err, isFollowing, context) => {
-      queryClient.setQueryData(
-        ["current_user", currentUser.email],
-        context.prevCurrent
-      );
-      queryClient.setQueryData(["user", targetUserId], context.prevTarget);
+      queryClient.setQueryData(queryKey, context.previousData);
       toast.error(`Failed to ${isFollowing ? "unfollow" : "follow"}!`);
     },
     onSettled: () => {
-      queryClient.invalidateQueries(["current_user", currentUser.email], {
-        exact: true,
-      });
-      queryClient.invalidateQueries(["user", targetUserId], { exact: true });
+      queryClient.invalidateQueries(queryKey, { exact: true });
     },
   });
 

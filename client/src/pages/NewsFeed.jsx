@@ -54,7 +54,7 @@ const NewsFeed = () => {
     );
 
   return (
-    <div className="grid lg:grid-cols-9">
+    <div className="mx-5 md:mx-0 grid lg:grid-cols-9">
       <div className="col-span-2"></div>
       <div className="col-span-5">
         {posts.map((post, idx) => (
@@ -62,7 +62,7 @@ const NewsFeed = () => {
             key={idx}
             post={post}
             userData={post.userData}
-            currentUser={user}
+            currentUser={current_user}
             onLike={actions.handleLike}
             onComment={actions.handleComment}
             onDeleteComment={actions.handleDeleteComment}
