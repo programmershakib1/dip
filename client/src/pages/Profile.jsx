@@ -6,6 +6,7 @@ import PostForm from "../components/PostForm";
 import PostCard from "../components/PostCard";
 import useAuth from "../hooks/useAuth";
 import Swal from "sweetalert2";
+import FriendLists from "../components/shared/FriendLists";
 
 const Profile = () => {
   const { user } = useAuth();
@@ -76,11 +77,13 @@ const Profile = () => {
     );
 
   return (
-    <div className="mx-5 md:mx-0">
+    <div>
       <ProfileHeader userData={userData} currentUser={user} />
-      <div className="grid lg:grid-cols-9 gap-10">
-        <div className="col-span-4"></div>
-        <div className="col-span-5">
+      <div className="grid grid-cols-1 lg:grid-cols-9 gap-5 md:gap-10">
+        <div className="col-span-9 md:col-span-4 mt-16 lg:mt-28">
+          <FriendLists friendsData={userData?.friendsData}></FriendLists>
+        </div>
+        <div className="col-span-9 md:col-span-5">
           <PostForm userData={userData} onPostSuccess={refetch} />
           {posts?.map((post) => (
             <PostCard

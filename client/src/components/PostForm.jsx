@@ -89,8 +89,8 @@ const PostForm = ({ userData, onPostSuccess }) => {
   };
 
   return (
-    <div className="mt-5 mb-5 md:mb-10">
-      <div className="flex items-center gap-2 rounded-lg cursor-text">
+    <div className="mx-5 md:mx-0 mb-5 md:mb-10">
+      <div className="flex items-center gap-2 rounded-lg">
         <img
           className="w-11 h-11 md:w-14 md:h-14 object-cover rounded-full"
           src={userData?.profile}

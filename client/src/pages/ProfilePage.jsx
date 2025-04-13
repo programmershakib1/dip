@@ -7,6 +7,7 @@ import { useParams } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
 import usePostActions from "../utils/usePostActions";
 import PostCard from "../components/PostCard";
+import FriendLists from "../components/shared/FriendLists";
 
 const ProfilePage = () => {
   const { user: currentUser } = useAuth();
@@ -66,9 +67,9 @@ const ProfilePage = () => {
   const queryKey = ["approved-posts", username, currentUser?.email];
 
   return (
-    <div className="mx-5 md:mx-0">
+    <div>
       <ProfileHeader userData={userData} currentUser={currentUserData} />
-      <div className="flex gap-3 mt-32">
+      <div className="mx-5 md:mx-0 flex gap-3 mt-36">
         <AddFriendButton
           targetUserId={userData?._id}
           currentUserData={currentUserData}
@@ -80,9 +81,11 @@ const ProfilePage = () => {
           queryKey={queryKey}
         />
       </div>
-      <div className="grid lg:grid-cols-9 gap-10 mt-5">
-        <div className="col-span-4"></div>
-        <div className="col-span-5">
+      <div className="grid grid-cols-1 lg:grid-cols-9 gap-10 mt-5">
+        <div className="col-span-9 md:col-span-4">
+          <FriendLists friendsData={userData?.friendsData}></FriendLists>
+        </div>
+        <div className="col-span-9 md:col-span-5">
           {posts?.length > 0 ? (
             posts.map((post) => (
               <PostCard

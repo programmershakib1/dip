@@ -89,13 +89,10 @@ const PostEditForm = ({ post, userData, onEditSuccess }) => {
 
   return (
     <>
-      <button
-        onClick={() => setModalOpen(true)}
-        className="text-gray-500 hover:text-gray-700"
-      >
-        <i className="fa-solid fa-pen-to-square text-2xl"></i>
+      <button onClick={() => setModalOpen(true)} className="text-gray-600">
+        <i className="fa-solid fa-pen-to-square text-lg"></i>
+        <span className="ml-2">Edit Post</span>
       </button>
-
       <dialog
         open={modalOpen}
         className={`modal ${modalOpen ? "modal-open" : ""}`}

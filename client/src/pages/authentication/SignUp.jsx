@@ -268,7 +268,7 @@ const SignUp = () => {
         Already have an Account ?
         <Link to="/signin" className="text-blue-700">
           {" "}
-          Sign In
+          Log In
         </Link>
       </p>
       <div className="flex justify-center mt-3">

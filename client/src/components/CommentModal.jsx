@@ -1,5 +1,6 @@
 import CommentList from "../components/CommentList";
 import { getTimeAgo } from "../utils/utils";
+import { useState } from "react";
 
 const CommentModal = ({
   post,
@@ -13,6 +14,8 @@ const CommentModal = ({
   onDeleteComment,
   onEditComment,
 }) => {
+  const [expandedCaption, setExpandedCaption] = useState(false);
+
   return (
     <dialog id={`modal-${post._id}`} className="modal">
       <div className="relative modal-box w-11/12 max-w-4xl flex flex-col h-[80vh]">
@@ -25,7 +28,7 @@ const CommentModal = ({
             <i className="fa-solid fa-circle-xmark"></i>
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-3">
+        <div className="flex-1 overflow-y-auto">
           <div className="flex items-center gap-3 my-3">
             <img
               src={userData?.profile}
@@ -39,12 +42,38 @@ const CommentModal = ({
               </p>
             </div>
           </div>
-          {post?.caption && <p className="mb-4">{post?.caption}</p>}
+          {post?.caption && (
+            <div className="mb-5">
+              {expandedCaption || post.caption.length <= 200 ? (
+                <p>{post.caption}</p>
+              ) : (
+                <>
+                  <p>
+                    {post.caption.slice(0, 200)}...
+                    <button
+                      className="text-gray-500 hover:underline ml-1"
+                      onClick={() => setExpandedCaption(true)}
+                    >
+                      See more
+                    </button>
+                  </p>
+                </>
+              )}
+              {expandedCaption && post.caption.length > 200 && (
+                <button
+                  className="text-gray-500 hover:underline mt-1"
+                  onClick={() => setExpandedCaption(false)}
+                >
+                  See less
+                </button>
+              )}
+            </div>
+          )}
           {post?.image && (
             <img
               src={post?.image}
               alt="post"
-              className="w-full h-52 md:h-[450px] object-cover rounded-lg"
+              className="w-full h-60 md:h-[450px] object-cover rounded-lg"
             />
           )}
           <div className="overflow-y-auto max-h-[400px] mt-5 mb-3">
@@ -66,7 +95,7 @@ const CommentModal = ({
             )}
           </div>
         </div>
-        <div className="bg-white sticky bottom-0 z-10 pt-4 flex items-center gap-3">
+        <div className="flex items-center gap-3 bg-white sticky bottom-0 z-10 pt-4">
           <img
             className="w-10 h-10 object-cover rounded-full"
             src={currentUser?.profile}

@@ -15,6 +15,7 @@ app.use(
       "http://localhost:5173",
       "http://localhost:5174",
       "http://localhost:5175",
+      "https://daily-islamicpost.web.app",
     ],
     credentials: true,
   })
@@ -45,7 +46,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@programmershakib.sm4uc.mongodb.net/?retryWrites=true&w=majority&appName=programmershakib`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@dailyislamicpost.xlx6i3b.mongodb.net/?appName=dailyislamicpost`;
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -57,11 +58,11 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.connect();
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
 
     // database collection
     const usersCollection = client.db("DIPDB").collection("users");
@@ -173,19 +174,34 @@ async function run() {
     });
 
     // my data
-    app.get("/my-data/:email", verifyToken, async (req, res) => {
-      const email = req.params.email;
-      const userData = await usersCollection.findOne({ email });
-      const userId = userData._id;
-      const posts = await allPostsCollection
-        .find({ user_id: userId.toString() })
-        .sort({ _id: -1 })
-        .toArray();
-      res.send({ userData, posts });
+    app.get("/my-data/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+
+        const userData = await usersCollection.findOne({ email });
+        const userId = userData._id;
+
+        const friendIds = userData.friends.map((id) => new ObjectId(id));
+
+        const friendsData = await usersCollection
+          .find({ _id: { $in: friendIds } })
+          .toArray();
+
+        userData.friendsData = friendsData;
+
+        const posts = await allPostsCollection
+          .find({ user_id: userId.toString() })
+          .sort({ _id: -1 })
+          .toArray();
+
+        res.send({ userData, posts });
+      } catch (error) {
+        res.status(500).send({ message: "Error fetching data", error });
+      }
     });
 
     // profile page data and approved posts
-    app.get("/approved-posts/:username", verifyToken, async (req, res) => {
+    app.get("/approved-posts/:username", async (req, res) => {
       const username = req.params.username;
       const currentUserEmail = req.query.currentUserEmail;
 
@@ -200,6 +216,14 @@ async function run() {
         if (!targetedUser) {
           return res.status(404).send({ message: "User not found" });
         }
+
+        const friendIds = targetedUser.friends.map((id) => new ObjectId(id));
+
+        const friendsData = await usersCollection
+          .find({ _id: { $in: friendIds } })
+          .toArray();
+
+        targetedUser.friendsData = friendsData;
 
         const currentUser = await usersCollection.findOne({
           email: currentUserEmail,
@@ -224,14 +248,14 @@ async function run() {
     });
 
     // create post
-    app.post("/new-post", verifyToken, async (req, res) => {
+    app.post("/new-post", async (req, res) => {
       const newPost = req.body;
       const result = await allPostsCollection.insertOne(newPost);
       res.send(result);
     });
 
     // edit post
-    app.patch("/edit-post/:id", verifyToken, async (req, res) => {
+    app.patch("/edit-post/:id", async (req, res) => {
       const id = req.params.id;
       const { caption, image, updatedAt } = req.body;
 
@@ -264,7 +288,7 @@ async function run() {
     });
 
     // get pending posts
-    app.get("/pending-posts", verifyToken, async (req, res) => {
+    app.get("/pending-posts", async (req, res) => {
       const query = {
         approvedStatus: false,
         postStatus: { $exists: false },
@@ -289,7 +313,7 @@ async function run() {
     });
 
     // approve post
-    app.post("/approve-post/:id", verifyToken, async (req, res) => {
+    app.post("/approve-post/:id", async (req, res) => {
       const id = req.params.id;
 
       const post = await allPostsCollection.findOne({
@@ -313,7 +337,7 @@ async function run() {
     });
 
     // reject post
-    app.patch("/reject-post/:id", verifyToken, async (req, res) => {
+    app.patch("/reject-post/:id", async (req, res) => {
       const id = req.params.id;
 
       const result = await allPostsCollection.updateOne(
@@ -329,7 +353,7 @@ async function run() {
     });
 
     // like post
-    app.post("/like-post/:id", verifyToken, async (req, res) => {
+    app.post("/like-post/:id", async (req, res) => {
       const id = req.params.id;
       const userId = req.body.user_id;
 
@@ -365,7 +389,7 @@ async function run() {
     });
 
     // add comment
-    app.post("/add-comment/:id", verifyToken, async (req, res) => {
+    app.post("/add-comment/:id", async (req, res) => {
       const id = req.params.id;
       const { user_id, comment } = req.body;
 
@@ -453,7 +477,7 @@ async function run() {
     );
 
     // my post delete
-    app.delete("/my-post-delete/:id", verifyToken, async (req, res) => {
+    app.delete("/my-post-delete/:id", async (req, res) => {
       const id = req.params.id;
       const result = await allPostsCollection.deleteOne({
         _id: new ObjectId(id),

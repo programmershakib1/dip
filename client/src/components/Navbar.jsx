@@ -1,33 +1,33 @@
+import { Link, NavLink } from "react-router-dom";
 import useAuth from "./../hooks/useAuth";
-import { Link } from "react-router-dom";
 import logo from "./../assets/logo.png";
 
 const Navbar = () => {
   const { user, handleSingOut } = useAuth();
   return (
-    <div className="mx-5 md:mx-0 md:flex justify-between items-center my-10">
-      <Link to="/" className="text-3xl font-black hidden md:block">
+    <div className="mx-5 md:mx-0 md:flex justify-between items-center my-5 md:my-10">
+      <NavLink to="/" className="text-3xl font-black hidden md:block">
         <img className="w-12 h-12" src={logo} alt="logo" />
-      </Link>
-      <div className="flex justify-center items-center gap-7 md:gap-10 lg:gap-20">
-        <Link to="/">
+      </NavLink>
+      <div className="flex justify-between items-center md:gap-10 lg:gap-20">
+        <NavLink to="/">
           <i className="fa-solid fa-house text-3xl"></i>
-        </Link>
-        <Link to="/friends">
+        </NavLink>
+        <NavLink to="/friends">
           <i className="fa-solid fa-user-group text-3xl"></i>
-        </Link>
-        <Link to="/pending-posts">
+        </NavLink>
+        <NavLink to="/pending-posts">
           <i className="fa-solid fa-clock text-[33px]"></i>
-        </Link>
-        <Link to="/notifications">
+        </NavLink>
+        <NavLink to="/notifications">
           <i className="fa-solid fa-bell text-4xl"></i>
-        </Link>
-        <Link to="/profile">
+        </NavLink>
+        <NavLink to="/profile">
           <i className="fa-solid fa-user text-[33px]"></i>
-        </Link>
-        <Link to="/settings">
+        </NavLink>
+        <NavLink to="/settings">
           <i className="fa-solid fa-gear text-4xl"></i>
-        </Link>
+        </NavLink>
       </div>
       <div className="hidden md:block">
         <div className="flex items-center gap-3">

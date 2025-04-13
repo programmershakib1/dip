@@ -173,7 +173,7 @@ const Settings = () => {
       <div className="relative">
         <div className="relative">
           <img
-            className="w-full h-40 md:h-72 lg:h-[450px] object-cover border-2 rounded-xl"
+            className="w-full h-48 md:h-80 lg:h-[450px] object-cover border-2 rounded-xl"
             src={coverPreview || "default-cover.jpg"}
             alt="banner"
           />
@@ -196,7 +196,7 @@ const Settings = () => {
             </button>
           )}
         </div>
-        <div className="absolute -bottom-28 md:-bottom-28 left-2 md:left-5 flex flex-col md:flex-row items-center md:gap-5">
+        <div className="absolute -bottom-32 md:left-5 flex flex-col md:flex-row items-center md:gap-5">
           <div className="relative">
             <img
               className="w-32 h-32 md:w-40 md:h-40 object-cover border-4 rounded-full"
@@ -222,7 +222,7 @@ const Settings = () => {
               </button>
             )}
           </div>
-          <div className="md:mt-3 text-center md:text-left">
+          <div className="mt-2 text-center md:text-left">
             <h2 className="text-xl font-semibold">{name || "Your Name"}</h2>
             <div className="flex items-center gap-3">
               <p>{userData?.friends?.length || 0} friends</p>
