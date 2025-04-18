@@ -3,6 +3,7 @@ import useAxiosPublic from "../hooks/useAxiosPublic";
 import useAxiosSecure from "../hooks/useAxiosSecure";
 import { useQuery } from "@tanstack/react-query";
 import PostCard from "../components/PostCard";
+import PostForm from "../components/PostForm";
 import useAuth from "../hooks/useAuth";
 
 const NewsFeed = () => {
@@ -10,7 +11,11 @@ const NewsFeed = () => {
   const axiosSecure = useAxiosSecure();
   const axiosPublic = useAxiosPublic();
 
-  const { data: posts = [], isLoading } = useQuery({
+  const {
+    data: posts = [],
+    refetch,
+    isLoading,
+  } = useQuery({
     queryKey: ["news-feeds"],
     queryFn: async () => {
       const { data } = await axiosPublic.get("/news-feeds");
@@ -57,6 +62,7 @@ const NewsFeed = () => {
     <div className="grid lg:grid-cols-9">
       <div className="col-span-2"></div>
       <div className="col-span-5">
+        <PostForm userData={current_user} onPostSuccess={refetch} />
         {posts.map((post, idx) => (
           <PostCard
             key={idx}

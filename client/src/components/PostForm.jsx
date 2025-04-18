@@ -1,11 +1,15 @@
 import useAxiosSecure from "../hooks/useAxiosSecure";
+import { Link, useLocation } from "react-router-dom";
 import { imageUpload } from "../utils/utils";
 import { useForm } from "react-hook-form";
+import useAuth from "../hooks/useAuth";
 import { useState } from "react";
 import Swal from "sweetalert2";
 
 const PostForm = ({ userData, onPostSuccess }) => {
+  const { user } = useAuth();
   const axiosSecure = useAxiosSecure();
+  const { pathname } = useLocation();
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
@@ -91,11 +95,21 @@ const PostForm = ({ userData, onPostSuccess }) => {
   return (
     <div className="mx-5 md:mx-0 mb-5 md:mb-10">
       <div className="flex items-center gap-2 rounded-lg">
-        <img
-          className="w-11 h-11 md:w-14 md:h-14 object-cover rounded-full"
-          src={userData?.profile}
-          alt="profile"
-        />
+        {pathname === "/" ? (
+          <Link to="/profile">
+            <img
+              className="w-11 h-11 md:w-14 md:h-14 object-cover rounded-full"
+              src={userData?.profile}
+              alt="profile"
+            />
+          </Link>
+        ) : (
+          <img
+            className="w-11 h-11 md:w-14 md:h-14 object-cover rounded-full"
+            src={user?.photoURL}
+            alt="profile"
+          />
+        )}
         <div
           onClick={() => setModalOpen(true)}
           className="flex-1 bg-gray-100 rounded-full py-2 md:py-4 px-6 text-gray-500 cursor-pointer"
@@ -103,7 +117,6 @@ const PostForm = ({ userData, onPostSuccess }) => {
           What's on your mind?
         </div>
       </div>
-
       {/* post modal */}
       <dialog
         open={modalOpen}

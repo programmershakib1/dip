@@ -21,6 +21,7 @@ const PostCard = ({
 }) => {
   const isLiked = post?.liked_by?.includes(currentUser?._id);
   const [expandedCaption, setExpandedCaption] = useState(false);
+  const [showFullScreen, setShowFullScreen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [showMenu, setShowMenu] = useState(false);
   const { pathname } = useLocation();
@@ -51,8 +52,12 @@ const PostCard = ({
     setCommentText("");
   };
 
+  const toggleFullScreen = () => {
+    setShowFullScreen(!showFullScreen);
+  };
+
   return (
-    <div className="md:mb-5 md:p-5 border-t-2 border-gray-400 md:border md:border-black md:rounded-xl">
+    <div className="md:mb-5 md:p-5 border-t-[3px] border-gray-400 md:border md:border-black md:rounded-xl">
       <div className="mt-3 mx-5 md:mx-0 flex justify-between relative">
         <div className="flex items-center">
           <Link to={`/${userData?.username}`}>
@@ -116,7 +121,7 @@ const PostCard = ({
                       className="text-gray-600"
                     >
                       <i className="fa-solid fa-trash text-lg"></i>
-                      <span className="ml-2">Edit Post</span>
+                      <span className="ml-2">Delete</span>
                     </button>
                   )}
                 </div>
@@ -156,7 +161,8 @@ const PostCard = ({
         <img
           src={post?.image}
           alt="post"
-          className="mt-3 w-full max-h-60 md:h-[400px] md:rounded-lg"
+          onClick={toggleFullScreen}
+          className="mt-3 w-full max-h-96 md:max-h-[500px] object-cover md:rounded-lg cursor-pointer"
         />
       )}
       <PostActions
@@ -180,11 +186,26 @@ const PostCard = ({
         onDeleteComment={onDeleteComment}
         onEditComment={onEditComment}
       />
+      {/* Full screen image modal */}
+      {showFullScreen && (
+        <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+          <div className="relative max-w-full max-h-full">
+            <img
+              src={post?.image}
+              alt="full-screen-post"
+              className="max-w-full max-h-full md:max-w-[90vw] md:max-h-[90vh]"
+            />
+            <button
+              onClick={toggleFullScreen}
+              className="absolute top-4 right-4 text-white text-4xl"
+            >
+              <i className="fa-solid fa-circle-xmark"></i>
+            </button>
+          </div>
+        </div>
+      )}
       {/* post status modal */}
-      <dialog
-        id="postStatusModal"
-        className="modal sm:modal-middle"
-      >
+      <dialog id="postStatusModal" className="modal sm:modal-middle">
         <div className="modal-box">
           <p className="py-4">{post?.postStatus}</p>
           <div className="modal-action">

@@ -7,7 +7,7 @@ import Swal from "sweetalert2";
 
 const PendingPosts = () => {
   const axiosSecure = useAxiosSecure();
-   const [expandedCaption, setExpandedCaption] = useState(false);
+  const [expandedCaption, setExpandedCaption] = useState(false);
 
   // get pending posts
   const {
@@ -62,9 +62,15 @@ const PendingPosts = () => {
     );
 
   return (
-    <div className="mx-5 md:mx-0 grid lg:grid-cols-9">
+    <div className="grid lg:grid-cols-9">
       <div className="col-span-2"></div>
       <div className="col-span-5">
+        {posts.length > 0 && (
+          <h2 className="mx-5 md:mx-0 text-md font-bold mb-3">
+            Pending Posts{" "}
+            <span className="text-lg text-red-500">{posts?.length}</span>
+          </h2>
+        )}
         {posts.length === 0 && (
           <div>
             <h2 className="text-center text-gray-500">
@@ -73,8 +79,11 @@ const PendingPosts = () => {
           </div>
         )}
         {posts.map((post, idx) => (
-          <div key={idx} className="p-5 border border-black rounded-xl mb-5">
-            <div className="flex items-center">
+          <div
+            key={idx}
+            className="mb-4 md:p-5 border-t-[3px] border-gray-400 md:border md:border-black md:rounded-xl"
+          >
+            <div className="mt-3 mx-5 md:mx-0 flex items-center">
               <Link to={`/${post?.userData?.username}`}>
                 <img
                   src={post?.userData?.profile}
@@ -92,52 +101,52 @@ const PendingPosts = () => {
               </div>
             </div>
             {post?.caption && (
-        <div className="mt-3">
-          {expandedCaption || post.caption.length <= 200 ? (
-            <p>{post.caption}</p>
-          ) : (
-            <>
-              <p>
-                {post.caption.slice(0, 125)}...
-                <button
-                  className="text-gray-500 hover:underline ml-1"
-                  onClick={() => setExpandedCaption(true)}
-                >
-                  See more
-                </button>
-              </p>
-            </>
-          )}
-          {expandedCaption && post.caption.length > 200 && (
-            <button
-              className="text-gray-500 hover:underline mt-1"
-              onClick={() => setExpandedCaption(false)}
-            >
-              See less
-            </button>
-          )}
-        </div>
-      )}
+              <div className="mt-3 mx-5 md:mx-0">
+                {expandedCaption || post.caption.length <= 200 ? (
+                  <p>{post.caption}</p>
+                ) : (
+                  <>
+                    <p>
+                      {post.caption.slice(0, 125)}...
+                      <button
+                        className="text-gray-500 hover:underline ml-1"
+                        onClick={() => setExpandedCaption(true)}
+                      >
+                        See more
+                      </button>
+                    </p>
+                  </>
+                )}
+                {expandedCaption && post.caption.length > 200 && (
+                  <button
+                    className="text-gray-500 hover:underline mt-1"
+                    onClick={() => setExpandedCaption(false)}
+                  >
+                    See less
+                  </button>
+                )}
+              </div>
+            )}
             {post?.image && (
               <img
                 src={post?.image}
                 alt="post"
-                className="mt-3 w-full h-52 md:h-[400px] object-cover rounded-lg"
+                className="mt-3 w-full max-h-[30vh] md:max-h-[70vh] rounded-lg"
               />
             )}
             {/* action */}
-            <div className="flex gap-5 mt-5">
+            <div className="mx-5 md:mx-0 flex justify-between items-center gap-3 mt-5">
               {/* approve button */}
               <button
                 onClick={() => handleApprovePost(post?._id)}
-                className="bg-green-500 text-white py-2 px-4 rounded-md"
+                className="w-full bg-green-500 text-white py-2 px-4 rounded-md"
               >
                 Approve
               </button>
               {/* reject button */}
               <button
                 onClick={() => handleRejectPost(post?._id)}
-                className="bg-red-500 text-white py-2 px-6 rounded-md"
+                className="w-full bg-red-500 text-white py-2 px-6 rounded-md"
               >
                 Reject
               </button>

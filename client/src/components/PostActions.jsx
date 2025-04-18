@@ -71,15 +71,24 @@ const PostActions = ({ post, isLiked, onLike, onComment, currentUser }) => {
   return (
     <div className="mx-5 md:mx-0 my-3">
       <div className="flex justify-between items-center gap-2">
-        <p
-          className="text-sm text-gray-600 transition-opacity duration-150 truncate max-w-[200px]"
-          title={formatLikeInfo() || ""}
-        >
-          {formatLikeInfo()}
-        </p>
+        <div className="flex items-center gap-2">
+          {post?.liked_by?.length > 0 && (
+            <>
+              <i className="fa-solid fa-thumbs-up text-md text-blue-600"></i>
+              <p
+                className="text-sm text-gray-600 transition-opacity duration-150 truncate max-w-[200px]"
+                title={formatLikeInfo() || ""}
+              >
+                {formatLikeInfo()}
+              </p>
+            </>
+          )}
+        </div>
         <p className="text-sm text-gray-600">
           {post?.comments?.length > 0 && (
-            <span>{`comments ${post?.comments?.length}`}</span>
+            <span
+              onClick={onComment}
+            >{`comments ${post?.comments?.length}`}</span>
           )}
         </p>
       </div>

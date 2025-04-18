@@ -1,13 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import ProfileInfo from "../components/settings/ProfileInfo";
+import Education from "../components/settings/Education";
+import Location from "../components/settings/Location";
 import useAxiosSecure from "../hooks/useAxiosSecure";
+import Work from "../components/settings/Work";
 import { updateProfile } from "firebase/auth";
 import { imageUpload } from "../utils/utils";
 import { useState, useEffect } from "react";
 import useAuth from "../hooks/useAuth";
 import toast from "react-hot-toast";
+import ContactInfo from "../components/settings/ContactInfo";
 
 const Settings = () => {
-  const { user } = useAuth();
+  const { user, handleSingOut } = useAuth();
   const axiosSecure = useAxiosSecure();
   const queryClient = useQueryClient();
 
@@ -26,32 +31,13 @@ const Settings = () => {
 
   const [profilePreview, setProfilePreview] = useState("");
   const [coverPreview, setCoverPreview] = useState("");
-  const [name, setName] = useState("");
-  const [username, setUsername] = useState("");
-  const [email] = useState(user?.email || "");
-  const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [profileFile, setProfileFile] = useState(null);
   const [coverFile, setCoverFile] = useState(null);
 
   useEffect(() => {
     setProfilePreview(userData?.profile || user?.photoURL || "");
     setCoverPreview(userData?.cover || "");
-    setName(userData?.name || user?.displayName || "");
-    setUsername(userData?.username || "");
   }, [userData, user]);
-
-  const checkUsername = async (value) => {
-    if (value === userData?.username) {
-      setUsernameAvailable(null);
-      return;
-    }
-    try {
-      const { data } = await axiosSecure.get(`/user_name/${value}`);
-      setUsernameAvailable(data.available);
-    } catch {
-      setUsernameAvailable(null);
-    }
-  };
 
   const handleImageChange = (e, type) => {
     const file = e.target.files[0];
@@ -90,7 +76,6 @@ const Settings = () => {
         updatedData.cover = await imageUpload(updatedData.coverFile);
         delete updatedData.coverFile;
       }
-
       if (updatedData.name || updatedData.profile) {
         await updateProfile(user, {
           displayName: updatedData.name || user.displayName,
@@ -107,43 +92,38 @@ const Settings = () => {
       const previousData = queryClient.getQueryData(["my-data", user?.email]);
       queryClient.setQueryData(["my-data", user?.email], (old) => ({
         ...old,
-        name: updatedData.name || old.name,
-        username: updatedData.username || old.username,
+        ...updatedData,
         profile: updatedData.profile || old.profile,
         cover: updatedData.cover || old.cover,
+        name: updatedData.name || old.name,
+        username: updatedData.username || old.username,
+        bio: updatedData.bio || old.bio,
+        work: updatedData.work || old.work,
+        education: updatedData.education || old.education,
+        location: updatedData.location || old.location,
+        phone: updatedData.phone || old.phone,
+        website: updatedData.website || old.website,
+        socialLinks: updatedData.socialLinks || old.socialLinks,
+        lastNameChange: updatedData.lastNameChange || old.lastNameChange,
+        lastUsernameChange:
+          updatedData.lastUsernameChange || old.lastUsernameChange,
       }));
       return { previousData };
     },
     onError: (err, updatedData, context) => {
       queryClient.setQueryData(["my-data", user?.email], context.previousData);
-      toast.error("Failed to update profile!");
+      toast.error("Failed to update!");
     },
     onSettled: () => {
       queryClient.invalidateQueries(["my-data", user?.email], { exact: true });
     },
     onSuccess: () => {
-      toast.success("Profile updated successfully!");
+      toast.success("Updated successfully!");
     },
   });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSaveImages = () => {
     const updatedData = {};
-
-    if (name && name !== userData?.name) {
-      if (name.length < 6) {
-        toast.error("Name must be at least 6 characters long!");
-        return;
-      }
-      updatedData.name = name;
-    }
-    if (username && username !== userData?.username && usernameAvailable) {
-      if (username.length < 6) {
-        toast.error("Username must be at least 6 characters long!");
-        return;
-      }
-      updatedData.username = username;
-    }
     if (profilePreview && profilePreview !== userData?.profile) {
       if (profileFile) updatedData.profileFile = profileFile;
       else updatedData.profile = profilePreview;
@@ -152,12 +132,15 @@ const Settings = () => {
       if (coverFile) updatedData.coverFile = coverFile;
       else updatedData.cover = coverPreview;
     }
-
     if (Object.keys(updatedData).length > 0) {
       updateMutation.mutate(updatedData);
     } else {
       toast.error("No changes detected!");
     }
+  };
+
+  const updateUserData = (data) => {
+    updateMutation.mutate(data);
   };
 
   if (isLoading || !user?.email) {
@@ -169,14 +152,20 @@ const Settings = () => {
   }
 
   return (
-    <div className="mx-5 md:mx-0">
+    <div className="mx-5 md:mx-0 mb-5">
       <div className="relative">
         <div className="relative">
-          <img
-            className="w-full h-48 md:h-80 lg:h-[450px] object-cover border-2 rounded-xl"
-            src={coverPreview || "default-cover.jpg"}
-            alt="banner"
-          />
+          {coverPreview ? (
+            <img
+              className="w-full h-48 md:h-80 lg:h-[450px] object-cover border-2 rounded-xl"
+              src={coverPreview || "default-cover.jpg"}
+              alt="banner"
+            />
+          ) : (
+            <div className="w-full h-48 md:h-80 lg:h-[450px] flex items-center justify-center border-2 rounded-xl">
+              <span className="loading loading-spinner loading-lg"></span>
+            </div>
+          )}
           <label className="absolute top-3 right-3 bg-blue-500 text-white px-3 py-1 rounded-md cursor-pointer">
             Edit Banner
             <input
@@ -222,8 +211,10 @@ const Settings = () => {
               </button>
             )}
           </div>
-          <div className="mt-2 text-center md:text-left">
-            <h2 className="text-xl font-semibold">{name || "Your Name"}</h2>
+          <div className="mt-2">
+            <h2 className="text-xl font-semibold">
+              {user?.displayName || userData?.name || "Your Name"}
+            </h2>
             <div className="flex items-center gap-3">
               <p>{userData?.friends?.length || 0} friends</p>
               <p>{userData?.followers?.length || 0} followers</p>
@@ -231,58 +222,55 @@ const Settings = () => {
           </div>
         </div>
       </div>
-      <form
-        onSubmit={handleSubmit}
-        className="mt-36 lg:mt-24 space-y-3 max-w-md mx-auto"
-      >
-        <div className="relative">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Name"
-            className="w-full px-3 py-2 border rounded-md"
-          />
-        </div>
-        <div className="relative">
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => {
-              setUsername(e.target.value);
-              checkUsername(e.target.value);
-            }}
-            placeholder="Username"
-            className="w-full px-3 py-2 border rounded-md pr-10"
-          />
-          {usernameAvailable === true && (
-            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500">
-              <i className="fa-solid fa-circle-check text-2xl"></i>
-            </span>
-          )}
-          {usernameAvailable === false && (
-            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-500">
-              <i className="fa-solid fa-circle-xmark text-2xl"></i>
-            </span>
-          )}
-        </div>
-        <div className="relative">
-          <input
-            type="email"
-            value={email}
-            disabled
-            placeholder="Email"
-            className="w-full px-3 py-2 border rounded-md bg-gray-100 cursor-not-allowed"
-          />
-        </div>
+      <div className="mt-36">
         <button
-          type="submit"
+          onClick={handleSaveImages}
           className="w-full py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
           disabled={updateMutation.isLoading}
         >
-          {updateMutation.isLoading ? "Saving..." : "Save Changes"}
+          {updateMutation.isLoading ? "Saving..." : "Save Images"}
         </button>
-      </form>
+      </div>
+      <ProfileInfo
+        userData={userData}
+        user={user}
+        axiosSecure={axiosSecure}
+        updateUserData={updateUserData}
+      />
+      <Work userData={userData} updateUserData={updateUserData}></Work>
+      <Education
+        userData={userData}
+        updateUserData={updateUserData}
+      ></Education>
+      <Location userData={userData} updateUserData={updateUserData}></Location>
+      <ContactInfo
+        userData={userData}
+        updateUserData={updateUserData}
+      ></ContactInfo>
+      <div className="flex flex-col gap-3 mt-5">
+        <button className="w-full py-2 bg-gray-300 rounded-md hover:bg-gray-400">
+          Security
+        </button>
+        <button className="w-full py-2 bg-gray-300 rounded-md hover:bg-gray-400">
+          Support
+        </button>
+        <button className="w-full py-2 bg-gray-300 rounded-md hover:bg-gray-400">
+          Terms & Policies
+        </button>
+        <a
+          href="https://programmer-shakib.web.app"
+          target="_blank"
+          className="w-full py-2 bg-gray-300 rounded-md hover:bg-gray-400 text-center"
+        >
+          Developer info
+        </a>
+        <button
+          onClick={handleSingOut}
+          className="w-full py-2 bg-gray-300 rounded-md hover:bg-gray-400"
+        >
+          Log Out
+        </button>
+      </div>
     </div>
   );
 };

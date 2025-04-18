@@ -9,7 +9,7 @@ const FriendRequests = () => {
   const axiosSecure = useAxiosSecure();
   const queryClient = useQueryClient();
 
-  // fetch current user's data
+  // fetch current user data
   const {
     data: userData = {},
     refetch,
@@ -115,40 +115,45 @@ const FriendRequests = () => {
   return (
     <div className="mx-5 md:mx-0 grid lg:grid-cols-9">
       <div className="col-span-2"></div>
-      <div className="col-span-5">
+      <div className="col-span-5 mb-5">
+        {requestUsers.length > 0 && (
+          <h2 className="text-md font-bold mb-3">
+            Friend Requests{" "}
+            <span className="text-lg text-red-500">{requestUsers?.length}</span>
+          </h2>
+        )}
         {requestUsers.length > 0 ? (
           requestUsers.map((requestUser) => (
-            <div
-              key={requestUser._id}
-              className="flex justify-between items-center gap-3 bg-gray-200 border p-4 rounded-xl mb-3"
-            >
-              <div className="flex items-center gap-2">
+            <div key={requestUser._id} className="grid grid-cols-10 gap-2 mb-2">
+              <Link to={`/${requestUser?.username}`} className="col-span-3 w-24 h-24">
+                <img
+                  className="w-24 h-24 object-cover rounded-full"
+                  src={requestUser.profile}
+                  alt={requestUser.name}
+                />
+              </Link>
+              <div className="col-span-7 flex flex-col justify-center">
                 <Link to={`/${requestUser?.username}`}>
-                  <img
-                    className="w-10 h-10 md:w-16 md:h-16 object-cover rounded-full"
-                    src={requestUser.profile}
-                    alt={requestUser.name}
-                  />
+                  <h3 className="md:text-xl font-semibold">
+                    {requestUser.name}
+                  </h3>
                 </Link>
-                <Link to={`/${requestUser?.username}`}>
-                  <h3 className="md:text-xl font-semibold">{requestUser.name}</h3>
-                </Link>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => handleAccept(requestUser._id)}
-                  disabled={acceptFriendRequestMutation.isLoading}
-                  className="md:w-24 bg-green-500 text-white py-2 px-2 font-bold text-xs md:text-base rounded-md"
-                >
-                  Accept
-                </button>
-                <button
-                  onClick={() => handleReject(requestUser._id)}
-                  disabled={rejectFriendRequestMutation.isLoading}
-                  className="md:w-24 bg-red-500 text-white py-2 px-2 text-xs md:text-base font-bold rounded-md"
-                >
-                  Reject
-                </button>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => handleAccept(requestUser._id)}
+                    disabled={acceptFriendRequestMutation.isLoading}
+                    className="w-full bg-blue-600 text-white py-2 px-2 font-bold text-xs md:text-base rounded-md"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => handleReject(requestUser._id)}
+                    disabled={rejectFriendRequestMutation.isLoading}
+                    className="w-full bg-gray-300 py-2 px-2 text-xs md:text-base font-bold rounded-md"
+                  >
+                    Reject
+                  </button>
+                </div>
               </div>
             </div>
           ))

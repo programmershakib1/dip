@@ -51,7 +51,7 @@ const CommentList = ({
         <img
           src={userData?.profile}
           alt="user"
-          className="w-[34px] h-8 object-cover rounded-full"
+          className="w-[36px] h-8 object-cover rounded-full"
         />
       </Link>
       <div className="w-full">
@@ -104,11 +104,7 @@ const CommentList = ({
                   <i className="fa-solid fa-trash text-sm" />
                 </button>
               )}
-              {editedAt && (
-                <p className="text-xs text-gray-500">
-                  Edited {getTimeAgo(editedAt)}
-                </p>
-              )}
+              {editedAt && <p className="text-xs text-gray-500">Edited</p>}
             </div>
           </>
         )}

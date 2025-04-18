@@ -15,11 +15,16 @@ const CommentModal = ({
   onEditComment,
 }) => {
   const [expandedCaption, setExpandedCaption] = useState(false);
+  const [showFullScreen, setShowFullScreen] = useState(false);
+
+  const toggleFullScreen = () => {
+    setShowFullScreen(!showFullScreen);
+  };
 
   return (
     <dialog id={`modal-${post._id}`} className="modal">
-      <div className="relative modal-box w-11/12 max-w-4xl flex flex-col h-[80vh]">
-        <div className="bg-white sticky top-0 z-10 pb-4 flex justify-between items-center border-b">
+      <div className="relative modal-box w-full h-full md:w-11/12 md:max-w-4xl flex flex-col md:h-[80vh] rounded-none md:rounded-lg">
+        <div className="bg-white sticky top-0 z-10 pb-2 md:pb-4 flex justify-between items-center border-b">
           <h3 className="font-bold text-lg">{userData?.name}'s Post</h3>
           <button
             className="text-3xl"
@@ -73,7 +78,8 @@ const CommentModal = ({
             <img
               src={post?.image}
               alt="post"
-              className="w-full h-60 md:h-[450px] object-cover rounded-lg"
+              onClick={toggleFullScreen}
+              className="mt-3 w-full max-h-96 md:max-h-[500px] object-cover rounded-lg cursor-pointer"
             />
           )}
           <div className="overflow-y-auto max-h-[400px] mt-5 mb-3">
@@ -117,6 +123,24 @@ const CommentModal = ({
           </button>
         </div>
       </div>
+      {/* Full screen image modal */}
+      {showFullScreen && (
+        <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+          <div className="relative max-w-full max-h-full">
+            <img
+              src={post?.image}
+              alt="full-screen-post"
+              className="max-w-full max-h-full md:max-w-[90vw] md:max-h-[90vh]"
+            />
+            <button
+              onClick={toggleFullScreen}
+              className="absolute top-4 right-4 text-white text-4xl"
+            >
+              <i className="fa-solid fa-circle-xmark"></i>
+            </button>
+          </div>
+        </div>
+      )}
     </dialog>
   );
 };
